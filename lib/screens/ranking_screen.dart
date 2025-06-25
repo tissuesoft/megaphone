@@ -1,9 +1,10 @@
 //랭킹 화면
 import 'package:flutter/material.dart';
-import 'package:megaphone/widgets/weeklyTop3Section.dart';
-import 'package:megaphone/widgets/totalTop3Section.dart';
-import 'package:megaphone/widgets/weeklyRankingList.dart';
-import 'package:megaphone/widgets/totalRankingList.dart';
+import 'package:megaphone/widgets/weekly_top_3_section.dart';
+import 'package:megaphone/widgets/total_top_3_section.dart';
+import 'package:megaphone/widgets/weekly_ranking_list.dart';
+import 'package:megaphone/widgets/total_ranking_list.dart';
+import 'package:megaphone/screens/search_screen.dart';
 
 class RankingScreen extends StatefulWidget {
   const RankingScreen({super.key});
@@ -56,7 +57,12 @@ class _RankingScreenState extends State<RankingScreen> {
                       height: 40,
                       child: ElevatedButton(
                         onPressed: () {
-                          // TODO: 검색 기능 자리
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SearchScreen(),
+                            ),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFF3F4F6),
@@ -187,8 +193,6 @@ class _RankingScreenState extends State<RankingScreen> {
           ],
         ),
       ),
-
-      // ✅ 하단 네비게이션 바
     );
   }
 

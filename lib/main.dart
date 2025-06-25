@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/bottomNavScreen.dart';
+import 'screens/bottom_nav_screen.dart';
 
 void main() {
   runApp(const MegaPhoneApp());

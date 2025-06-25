@@ -1,8 +1,8 @@
 // 하단 네비게이션 바(홈, 랭킹, 프로필) 화면
 import 'package:flutter/material.dart';
-import 'homeScreen.dart';
+import 'home_screen.dart';
 import 'ranking_screen.dart';
-import 'profileScreen.dart';
+import 'profile_screen.dart';
 
 class BottomNavScreen extends StatefulWidget {
   const BottomNavScreen({super.key});

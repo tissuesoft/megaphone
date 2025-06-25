@@ -1,9 +1,9 @@
 //랭킹 화면
 import 'package:flutter/material.dart';
-import 'package:megaphone/widgets/weekly_top_3_section.dart';
-import 'package:megaphone/widgets/total_top_3_section.dart';
-import 'package:megaphone/widgets/weekly_ranking_list.dart';
-import 'package:megaphone/widgets/total_ranking_list.dart';
+import 'package:megaphone/ranking_widgets/weekly_top_3_section.dart';
+import 'package:megaphone/ranking_widgets/total_top_3_section.dart';
+import 'package:megaphone/ranking_widgets/weekly_ranking_list.dart';
+import 'package:megaphone/ranking_widgets/total_ranking_list.dart';
 import 'package:megaphone/screens/search_screen.dart';
 
 class RankingScreen extends StatefulWidget {

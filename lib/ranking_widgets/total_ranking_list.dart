@@ -11,13 +11,13 @@ class TotalRankingList extends StatelessWidget {
         'rank': '4',
         'name': '최드립',
         'badge': '134회',
-        'image': 'lib/assets/crownIcon.png',
+        'image': 'assets/crownIcon.png',
       },
       {
         'rank': '5',
         'name': '정알림',
         'badge': '20회',
-        'image': 'assets/images/user5.png',
+        'image': 'assets/kimyongsik.jpg',
       },
       {
         'rank': '6',

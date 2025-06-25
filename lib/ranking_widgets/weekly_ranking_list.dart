@@ -96,7 +96,7 @@ class WeeklyRankingList extends StatelessWidget {
                       child: Row(
                         children: [
                           Image.asset(
-                            'lib/assets/megaphoneCountIcon.png',
+                            'assets/megaphoneCountIcon.png',
                             width: 12,
                             height: 12,
                           ),

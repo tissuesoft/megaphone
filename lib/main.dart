@@ -1,26 +1,22 @@
 import 'package:flutter/material.dart';
-import 'screens/ranking_screen.dart';
+import 'screens/bottomNavScreen.dart'; // ✅ 추가
 
 void main() {
-  runApp(const MegaphoneApp());
+  runApp(const MyApp());
 }
 
-class MegaphoneApp extends StatelessWidget {
-  const MegaphoneApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '고성능 확성기',
-      debugShowCheckedModeBanner: false,
+      title: 'High Performance Megaphone',
       theme: ThemeData(
         fontFamily: 'Montserrat',
-        scaffoldBackgroundColor: Colors.white,
+        primarySwatch: Colors.orange,
       ),
-      home: const RankingScreen(), // ✅ 처음에는 랭킹 화면으로 시작
-      // routes: {
-      //   '/profile': (context) => const ProfileScreen(), // ✅ 상대 프로필 라우트 추가
-      // },
+      home: const BottomNavScreen(), // ✅ 바뀐 부분
     );
   }
 }

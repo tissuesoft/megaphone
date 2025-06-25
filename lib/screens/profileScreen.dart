@@ -1,3 +1,4 @@
+// 프로필 화면
 import 'package:flutter/material.dart';
 
 class ProfileScreen extends StatelessWidget {

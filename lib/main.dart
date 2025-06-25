@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'screens/bottomNavScreen.dart'; // ✅ 추가
+import 'screens/bottomNavScreen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const MegaPhoneApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MegaPhoneApp extends StatelessWidget {
+  const MegaPhoneApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Montserrat',
         primarySwatch: Colors.orange,
       ),
-      home: const BottomNavScreen(), // ✅ 바뀐 부분
+      home: const BottomNavScreen(),
     );
   }
 }

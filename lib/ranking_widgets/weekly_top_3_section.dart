@@ -1,5 +1,5 @@
-//이번 주 랭킹에서 1등부터 3등까지
 import 'package:flutter/material.dart';
+import 'package:megaphone/screens/otherpeople_profile_screen.dart';
 
 class WeeklyTop3Section extends StatelessWidget {
   const WeeklyTop3Section({super.key});
@@ -110,93 +110,103 @@ class _TopUserCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: imageSize,
-              height: imageSize,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: borderColor, width: 4),
-                image: const DecorationImage(
-                  image: NetworkImage('https://via.placeholder.com/150'),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            Positioned(
-              right: -8,
-              top: -8,
-              child: Container(
-                width: 32,
-                height: 32,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const OtherProfileScreen(),
+          ),
+        );
+      },
+      child: Column(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: imageSize,
+                height: imageSize,
                 decoration: BoxDecoration(
-                  color: badgeColor,
                   shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  rank,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: Colors.white,
+                  border: Border.all(color: borderColor, width: 4),
+                  image: const DecorationImage(
+                    image: NetworkImage('https://via.placeholder.com/150'),
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
-            ),
-            if (isCrown)
               Positioned(
-                right: -12,
-                top: -12,
+                right: -8,
+                top: -8,
                 child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFACC15),
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: badgeColor,
                     shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,
-                  child: Icon(
-                    Icons.emoji_events,
-                    color: Colors.white,
-                    size: 20,
+                  child: Text(
+                    rank,
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          name,
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
+              if (isCrown)
+                Positioned(
+                  right: -12,
+                  top: -12,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFACC15),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.emoji_events,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+            ],
           ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            gradient: countGradient,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            count,
+          const SizedBox(height: 8),
+          Text(
+            name,
             style: const TextStyle(
-              fontSize: 12,
               fontFamily: 'Poppins',
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
               color: Colors.white,
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              gradient: countGradient,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              count,
+              style: const TextStyle(
+                fontSize: 12,
+                fontFamily: 'Poppins',
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

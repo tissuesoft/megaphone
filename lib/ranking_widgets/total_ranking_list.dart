@@ -1,5 +1,5 @@
-//총 랭킹에서 4등부터 100등까지
 import 'package:flutter/material.dart';
+import 'package:megaphone/screens/otherpeople_profile_screen.dart';
 
 class TotalRankingList extends StatelessWidget {
   const TotalRankingList({super.key});
@@ -62,9 +62,20 @@ class TotalRankingList extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          CircleAvatar(
-            radius: 24,
-            backgroundImage: AssetImage(user['image']!),
+          // ⬇ 이미지 누르면 프로필 화면으로 이동
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const OtherProfileScreen(),
+                ),
+              );
+            },
+            child: CircleAvatar(
+              radius: 24,
+              backgroundImage: AssetImage(user['image']!),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -73,13 +84,24 @@ class TotalRankingList extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      user['name']!,
-                      style: const TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: Color(0xFF2D3748),
+                    // ⬇ 이름 눌러도 동일한 화면으로 이동
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const OtherProfileScreen(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        user['name']!,
+                        style: const TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Color(0xFF2D3748),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -111,7 +133,6 @@ class TotalRankingList extends StatelessWidget {
                     ),
                   ],
                 ),
-                // count 생략됨
               ],
             ),
           ),

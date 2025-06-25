@@ -1,5 +1,5 @@
-//이번 주 랭킹에서 4등부터 100등까지
 import 'package:flutter/material.dart';
+import 'package:megaphone/screens/otherpeople_profile_screen.dart';
 
 class WeeklyRankingList extends StatelessWidget {
   const WeeklyRankingList({super.key});
@@ -66,9 +66,20 @@ class WeeklyRankingList extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          CircleAvatar(
-            radius: 24,
-            backgroundImage: AssetImage(user['image']!),
+          // 이미지 클릭 시 이동
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const OtherProfileScreen(),
+                ),
+              );
+            },
+            child: CircleAvatar(
+              radius: 24,
+              backgroundImage: AssetImage(user['image']!),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -77,13 +88,24 @@ class WeeklyRankingList extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      user['name']!,
-                      style: const TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: Color(0xFF2D3748),
+                    // 닉네임 클릭 시 이동
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const OtherProfileScreen(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        user['name']!,
+                        style: const TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Color(0xFF2D3748),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 6),

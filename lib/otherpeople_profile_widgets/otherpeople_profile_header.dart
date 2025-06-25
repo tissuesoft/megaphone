@@ -26,7 +26,7 @@ class OtherPeopleProfileHeader extends StatelessWidget implements PreferredSizeW
           children: [
             // 가운데 "프로필"
             const Text(
-              '프로필',
+              'xxx 프로필',
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontWeight: FontWeight.w700,

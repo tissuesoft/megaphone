@@ -21,7 +21,7 @@ class HomeHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // 왼쪽: 확성기 아이콘 + 텍스트
+          // 왼쪽: 아이콘 + 텍스트
           Row(
             children: [
               Image.asset(
@@ -41,41 +41,39 @@ class HomeHeader extends StatelessWidget {
             ],
           ),
 
-          // 오른쪽: 알림 + 배지 + 프로필 이미지
-          Row(
+          // 오른쪽: IconButton 알림 버튼
+          Stack(
+            clipBehavior: Clip.none,
             children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Icon(Icons.notifications, size: 24, color: Colors.black),
-                  Positioned(
-                    top: -4,
-                    right: -4,
-                    child: Container(
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: Color(0xFFFF6B35),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          '3',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
+              IconButton(
+                icon: const Icon(Icons.notifications, color: Colors.black),
+                iconSize: 24,
+                onPressed: () {
+                  print('알림 눌림');
+                  // TODO: 알림 페이지로 이동
+                },
+              ),
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF6B35),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '3',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              const CircleAvatar(
-                radius: 16,
-                backgroundImage: AssetImage('assets/kimyongsik.jpg'),
+                ),
               ),
             ],
           ),

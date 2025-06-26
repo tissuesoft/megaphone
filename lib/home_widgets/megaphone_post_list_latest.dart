@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:megaphone/screens/otherpeople_profile_screen.dart';
 
 class MegaphonePostCard extends StatelessWidget {
   final String profileImage;
@@ -24,6 +25,13 @@ class MegaphonePostCard extends StatelessWidget {
     required this.remaining,
   });
 
+  void _goToProfile(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const OtherProfileScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -44,46 +52,50 @@ class MegaphonePostCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 상단: 프로필 + 이름 + 뱃지 + 작성 시간
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundImage: AssetImage(profileImage),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    username,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                  ),
-                  if (badgeText != null && badgeText!.isNotEmpty) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFED7AA),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        children: [
-                          Image.asset('assets/megaphoneCountIcon.png', width: 12, height: 12),
-                          const SizedBox(width: 4),
-                          Text(
-                            badgeText!,
-                            style: const TextStyle(
-                              fontFamily: 'Roboto',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              color: Color(0xFF9A3412),
-                            ),
-                          ),
-                        ],
-                      ),
+              GestureDetector(
+                onTap: () => _goToProfile(context),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundImage: AssetImage(profileImage),
                     ),
+                    const SizedBox(width: 8),
+                    Text(
+                      username,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                    if (badgeText != null && badgeText!.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFED7AA),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          children: [
+                            Image.asset('assets/megaphoneCountIcon.png', width: 12, height: 12),
+                            const SizedBox(width: 4),
+                            Text(
+                              badgeText!,
+                              style: const TextStyle(
+                                fontFamily: 'Roboto',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: Color(0xFF9A3412),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
               Text(postTime, style: const TextStyle(fontSize: 12)),
             ],

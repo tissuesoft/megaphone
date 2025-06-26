@@ -1,7 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:megaphone/screens/otherpeople_profile_screen.dart';
 
-class MegaphoneCard extends StatelessWidget {
+class MegaphoneCard extends StatefulWidget {
   const MegaphoneCard({super.key});
+
+  @override
+  State<MegaphoneCard> createState() => _MegaphoneCardState();
+}
+
+class _MegaphoneCardState extends State<MegaphoneCard> {
+  bool isLiked = false;
+
+  void toggleLike() {
+    setState(() {
+      isLiked = !isLiked;
+    });
+  }
+
+  void goToProfile() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const OtherProfileScreen(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +50,7 @@ class MegaphoneCard extends StatelessWidget {
               Row(
                 children: [
                   Image.asset(
-                    'assets/home_megaphone_icon.png', // ← 아이콘 경로
+                    'assets/home_megaphone_icon.png',
                     width: 20,
                     height: 20,
                     color: Colors.white,
@@ -80,40 +103,50 @@ class MegaphoneCard extends StatelessWidget {
           // 하단 정보
           Row(
             children: [
-              // 좋아요
-              Row(
-                children: [
-                  const Icon(Icons.favorite, size: 16, color: Colors.white),
-                  const SizedBox(width: 4),
-                  const Text(
-                    '1,247',
-                    style: TextStyle(
-                      fontFamily: 'Montserrat',
-                      fontSize: 14,
-                      color: Colors.white,
+              // 좋아요 버튼
+              GestureDetector(
+                onTap: toggleLike,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.favorite,
+                      size: 16,
+                      color: isLiked ? Colors.red : Colors.white,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    const Text(
+                      '1,247',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 14,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(width: 16),
 
-              // 프로필 + 이름
-              Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 12,
-                    backgroundImage: AssetImage('assets/kimyongsik.jpg'),
-                  ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    '김고확',
-                    style: TextStyle(
-                      fontFamily: 'Montserrat',
-                      fontSize: 14,
-                      color: Colors.white,
+              // 프로필 이미지 + 이름 (누르면 이동)
+              GestureDetector(
+                onTap: goToProfile,
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 12,
+                      backgroundImage: AssetImage('assets/kimyongsik.jpg'),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    const Text(
+                      '김고확',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 14,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(width: 8),
 
@@ -127,7 +160,7 @@ class MegaphoneCard extends StatelessWidget {
                 child: Row(
                   children: [
                     Image.asset(
-                      'assets/megaphoneCountIcon.png', // ← 아이콘 이미지로 교체
+                      'assets/megaphoneCountIcon.png',
                       width: 12,
                       height: 12,
                     ),

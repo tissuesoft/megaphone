@@ -1,4 +1,3 @@
-//홈 화면
 import 'package:flutter/material.dart';
 import '../home_widgets/home_header.dart';
 import '../home_widgets/megaphone_card.dart';
@@ -27,6 +26,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+
+      // ✅ 오른쪽 하단 글쓰기 버튼 추가
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        backgroundColor: const Color(0xFFFF6B35),
+        elevation: 6,
+        shape: const CircleBorder(), // 🔒 원형 고정
+        child: const Icon(Icons.edit, color: Colors.white),
+      ),
+
+
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(

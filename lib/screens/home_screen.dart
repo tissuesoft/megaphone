@@ -24,7 +24,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< br
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -44,14 +43,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 const MegaphonePostListLiked(),
             ],
           ),
-=======
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          '홈 화면',
-          style: TextStyle(fontSize: 24),
-          textAlign: TextAlign.center,
->>>>>>> main
         ),
       ),
     );

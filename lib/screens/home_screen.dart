@@ -11,6 +11,7 @@ class HomeScreen extends StatelessWidget {
         child: Text(
           '홈 화면',
           style: TextStyle(fontSize: 24),
+          textAlign: TextAlign.center,
         ),
       ),
     );

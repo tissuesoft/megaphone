@@ -1,24 +1,31 @@
-// 하단 네비게이션 바(홈, 랭킹, 프로필) 화면
+// lib/screens/bottom_nav_screen.dart
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'ranking_screen.dart';
 import 'myprofile_screen.dart';
 
 class BottomNavScreen extends StatefulWidget {
-  const BottomNavScreen({super.key});
+  final int initialIndex;
+  const BottomNavScreen({super.key, this.initialIndex = 1}); // 기본은 랭킹
 
   @override
   State<BottomNavScreen> createState() => _BottomNavScreenState();
 }
 
 class _BottomNavScreenState extends State<BottomNavScreen> {
-  int _selectedIndex = 1;
+  late int _selectedIndex;
 
   final List<Widget> _screens = const [
     HomeScreen(),
     RankingScreen(),
     ProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -33,8 +40,8 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        selectedItemColor: Color(0xFFFF6B35),
-        unselectedItemColor: Color(0xFF9CA3AF),
+        selectedItemColor: const Color(0xFFFF6B35),
+        unselectedItemColor: const Color(0xFF9CA3AF),
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
         unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w400),
         items: const [

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:megaphone/screens/setting_screen.dart'; // ✅ 설정 화면 import 추가
 
 class ProfileHeader extends StatelessWidget {
   const ProfileHeader({super.key});
@@ -47,7 +48,12 @@ class ProfileHeader extends StatelessWidget {
                     color: Color(0xFF4B5563),
                   ),
                   onPressed: () {
-                    // 설정 화면 이동
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SettingScreen(),
+                      ),
+                    );
                   },
                 ),
               ),

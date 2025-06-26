@@ -1,3 +1,4 @@
+//홈 화면
 import 'package:flutter/material.dart';
 import '../home_widgets/home_header.dart';
 import '../home_widgets/megaphone_card.dart';

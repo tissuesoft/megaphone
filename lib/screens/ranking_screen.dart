@@ -22,6 +22,7 @@ class _RankingScreenState extends State<RankingScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
+      backgroundColor: Colors.white, // 상태바 포함 전체 배경 흰색
       body: SafeArea(
         child: Column(
           children: [

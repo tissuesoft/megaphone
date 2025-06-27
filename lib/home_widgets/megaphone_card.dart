@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marquee/marquee.dart';
 import 'package:megaphone/screens/otherpeople_profile_screen.dart';
 
 class MegaphoneCard extends StatefulWidget {
@@ -87,15 +88,26 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
           ),
           const SizedBox(height: 12),
 
-          // 본문 텍스트
-          const Text(
-            '점심시간에 라면 먹는 사람 손들 어봐 🍜',
-            style: TextStyle(
-              fontFamily: 'Montserrat',
-              fontWeight: FontWeight.w700,
-              fontSize: 20,
-              height: 1.5,
-              color: Colors.white,
+          // 본문 텍스트 (전광판 효과)
+          SizedBox(
+            height: 28,
+            width: double.infinity,
+            child: Marquee(
+              text: '점심시간에 라면 먹는 사람 손들 어봐 푸쵸핸즈업 푸쵸핸즈업 🍜',
+              style: const TextStyle(
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.w700,
+                fontSize: 20,
+                color: Colors.white,
+              ),
+              scrollAxis: Axis.horizontal,
+              blankSpace: 60.0,
+              velocity: 40.0,
+              startPadding: 10.0,
+              accelerationDuration: const Duration(seconds: 1),
+              accelerationCurve: Curves.linear,
+              decelerationDuration: const Duration(milliseconds: 500),
+              decelerationCurve: Curves.easeOut,
             ),
           ),
           const SizedBox(height: 16),
@@ -127,7 +139,7 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
               ),
               const SizedBox(width: 16),
 
-              // 프로필 이미지 + 이름 (누르면 이동)
+              // 프로필 + 이름
               GestureDetector(
                 onTap: goToProfile,
                 child: Row(

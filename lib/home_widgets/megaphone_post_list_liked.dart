@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:megaphone/screens/otherpeople_profile_screen.dart';
 
-class MegaphonePostCard extends StatelessWidget {
+class MegaphonePostCard extends StatefulWidget {
   final String profileImage;
   final String username;
   final String? badgeText;
@@ -24,6 +24,27 @@ class MegaphonePostCard extends StatelessWidget {
     required this.comments,
     required this.remaining,
   });
+
+  @override
+  State<MegaphonePostCard> createState() => _MegaphonePostCardState();
+}
+
+class _MegaphonePostCardState extends State<MegaphonePostCard> {
+  bool isLiked = false;
+  late int likeCount;
+
+  @override
+  void initState() {
+    super.initState();
+    likeCount = widget.likes;
+  }
+
+  void _toggleLike() {
+    setState(() {
+      isLiked = !isLiked;
+      likeCount += isLiked ? 1 : -1;
+    });
+  }
 
   void _goToProfile(BuildContext context) {
     Navigator.push(
@@ -62,14 +83,18 @@ class MegaphonePostCard extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 16,
-                      backgroundImage: AssetImage(profileImage),
+                      backgroundImage: AssetImage(widget.profileImage),
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      username,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                      widget.username,
+                      style: const TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    if (badgeText != null && badgeText!.isNotEmpty) ...[
+                    if (widget.badgeText != null && widget.badgeText!.isNotEmpty) ...[
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -82,7 +107,7 @@ class MegaphonePostCard extends StatelessWidget {
                             Image.asset('assets/megaphoneCountIcon.png', width: 12, height: 12),
                             const SizedBox(width: 4),
                             Text(
-                              badgeText!,
+                              widget.badgeText!,
                               style: const TextStyle(
                                 fontFamily: 'Roboto',
                                 fontSize: 12,
@@ -97,29 +122,70 @@ class MegaphonePostCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Text(postTime, style: const TextStyle(fontSize: 12)),
+              Text(
+                widget.postTime,
+                style: const TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 12,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 4),
-          Text(timeAgo, style: const TextStyle(fontSize: 12)),
+          Text(
+            widget.timeAgo,
+            style: const TextStyle(
+              fontFamily: 'Montserrat',
+              fontSize: 12,
+            ),
+          ),
           const SizedBox(height: 12),
-          Text(content, style: const TextStyle(fontSize: 16)),
+          Text(
+            widget.content,
+            style: const TextStyle(
+              fontFamily: 'Montserrat',
+              fontSize: 16,
+            ),
+          ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.favorite, size: 16, color: Colors.black),
+                  GestureDetector(
+                    onTap: _toggleLike,
+                    child: Icon(
+                      isLiked ? Icons.favorite : Icons.favorite_border,
+                      size: 16,
+                      color: isLiked ? Colors.red : Colors.black,
+                    ),
+                  ),
                   const SizedBox(width: 4),
-                  Text('$likes'),
+                  Text(
+                    '$likeCount',
+                    style: const TextStyle(fontFamily: 'Montserrat'),
+                  ),
                   const SizedBox(width: 16),
-                  const Icon(Icons.mode_comment, size: 16, color: Colors.black),
+                  Image.asset(
+                    'assets/comment_icon.png',
+                    width: 16,
+                    height: 16,
+                  ),
                   const SizedBox(width: 4),
-                  Text('$comments'),
+                  Text(
+                    '${widget.comments}',
+                    style: const TextStyle(fontFamily: 'Montserrat'),
+                  ),
                 ],
               ),
-              Text(remaining, style: const TextStyle(fontSize: 12)),
+              Text(
+                widget.remaining,
+                style: const TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontSize: 12,
+                ),
+              ),
             ],
           ),
         ],

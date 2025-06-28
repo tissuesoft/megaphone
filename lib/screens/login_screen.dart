@@ -1,0 +1,192 @@
+import 'package:flutter/material.dart';
+import 'bottom_nav_screen.dart';
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _floatAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true); // 반복하면서 반대로 되돌아감
+
+    _floatAnimation = Tween<double>(begin: 0, end: -15).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    final iconTop = screenHeight * 0.28;
+    final iconSize = screenWidth * 0.6;
+    final textTop = iconTop + iconSize - 60;
+
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFFF6B35), Color(0xFFFB923C), Color(0xFFF87171)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // ✅ 둥둥 떠있는 아이콘
+              Positioned(
+                top: iconTop,
+                left: 0,
+                right: 0,
+                child: AnimatedBuilder(
+                  animation: _floatAnimation,
+                  builder: (context, child) {
+                    return Transform.translate(
+                      offset: Offset(0, _floatAnimation.value),
+                      child: Image.asset(
+                        'assets/login_megaphone_icon.png',
+                        width: iconSize,
+                        height: iconSize,
+                        fit: BoxFit.contain,
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // 텍스트
+              Positioned(
+                top: textTop,
+                left: 0,
+                right: 0,
+                child: Column(
+                  children: const [
+                    Text(
+                      '고성능 확성기',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Poppins',
+                        color: Colors.white,
+                        letterSpacing: -1.25,
+                        height: 1.1,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '모두에게 전하는 한마디',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Poppins',
+                        color: Color.fromRGBO(255, 255, 255, 0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 카카오 로그인 버튼
+              Positioned(
+                bottom: screenHeight * 0.33,
+                left: screenWidth * 0.12,
+                right: screenWidth * 0.12,
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const BottomNavScreen(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    height: 45,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEE500),
+                      borderRadius: BorderRadius.circular(9999),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color.fromRGBO(0, 0, 0, 0.1),
+                          offset: Offset(0, 4),
+                          blurRadius: 6,
+                        ),
+                        BoxShadow(
+                          color: Color.fromRGBO(0, 0, 0, 0.1),
+                          offset: Offset(0, 10),
+                          blurRadius: 15,
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Positioned(
+                          left: 16,
+                          top: 15.5,
+                          child: Image.asset(
+                            'assets/kakao_icon.png',
+                            width: 14,
+                            height: 14,
+                          ),
+                        ),
+                        const Text(
+                          '카카오 로그인',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            fontFamily: 'NotoSansKR',
+                            color: Colors.black,
+                            height: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // 약관 안내 텍스트
+              Positioned(
+                bottom: screenHeight * 0.03,
+                left: 0,
+                right: 0,
+                child: const Text(
+                  '로그인하면 서비스 이용약관 및\n개인정보처리방침에 동의하는 것으로 간주됩니다.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white60,
+                    fontSize: 12,
+                    fontFamily: 'Poppins',
+                    height: 1.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

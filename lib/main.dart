@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'screens/bottom_nav_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/bottom_nav_screen.dart';   // 홈 화면
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // .env 파일 경로를 명시적으로 지정
+  // .env 파일 로딩
   await dotenv.load(fileName: 'assets/.env');
 
   await Supabase.initialize(
@@ -25,8 +26,12 @@ class MegaPhoneApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'High Performance Megaphone',
-      theme: ThemeData(fontFamily: 'Montserrat', primarySwatch: Colors.orange),
-      home: const BottomNavScreen(),
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        fontFamily: 'Montserrat',
+        primarySwatch: Colors.orange,
+      ),
+      home: const LoginScreen(), // ✅ 앱 시작 시 로그인 화면 먼저 보여줌
     );
   }
 }

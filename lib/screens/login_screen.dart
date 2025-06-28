@@ -16,11 +16,10 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
-
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat(reverse: true); // 반복하면서 반대로 되돌아감
+    )..repeat(reverse: true);
 
     _floatAnimation = Tween<double>(begin: 0, end: -15).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
@@ -40,7 +39,13 @@ class _LoginScreenState extends State<LoginScreen>
 
     final iconTop = screenHeight * 0.28;
     final iconSize = screenWidth * 0.6;
-    final textTop = iconTop + iconSize - 60;
+    final textTop = iconTop + iconSize - screenHeight * 0.07;
+    final fontSizeTitle = screenWidth * 0.075;
+    final fontSizeSubtitle = screenWidth * 0.035;
+    final kakaoBtnHeight = screenHeight * 0.055;
+    final kakaoFontSize = screenWidth * 0.035;
+    final kakaoIconSize = screenWidth * 0.035;
+    final termsFontSize = screenWidth * 0.03;
 
     return Scaffold(
       body: Container(
@@ -54,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen>
         child: SafeArea(
           child: Stack(
             children: [
-              // ✅ 둥둥 떠있는 아이콘
+              // ✅ 둥둥 떠있는 아이콘 (boxShadow 유지)
               Positioned(
                 top: iconTop,
                 left: 0,
@@ -75,17 +80,17 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
 
-              // 텍스트
+              // ✅ 텍스트
               Positioned(
                 top: textTop,
                 left: 0,
                 right: 0,
                 child: Column(
-                  children: const [
+                  children: [
                     Text(
                       '고성능 확성기',
                       style: TextStyle(
-                        fontSize: 30,
+                        fontSize: fontSizeTitle,
                         fontWeight: FontWeight.w700,
                         fontFamily: 'Poppins',
                         color: Colors.white,
@@ -93,21 +98,21 @@ class _LoginScreenState extends State<LoginScreen>
                         height: 1.1,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    SizedBox(height: screenHeight * 0.008),
                     Text(
                       '모두에게 전하는 한마디',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: fontSizeSubtitle,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Poppins',
-                        color: Color.fromRGBO(255, 255, 255, 0.8),
+                        color: const Color.fromRGBO(255, 255, 255, 0.8),
                       ),
                     ),
                   ],
                 ),
               ),
 
-              // 카카오 로그인 버튼
+              // ✅ 카카오 로그인 버튼
               Positioned(
                 bottom: screenHeight * 0.33,
                 left: screenWidth * 0.12,
@@ -122,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen>
                     );
                   },
                   child: Container(
-                    height: 45,
+                    height: kakaoBtnHeight,
                     decoration: BoxDecoration(
                       color: const Color(0xFFFEE500),
                       borderRadius: BorderRadius.circular(9999),
@@ -143,18 +148,18 @@ class _LoginScreenState extends State<LoginScreen>
                       alignment: Alignment.center,
                       children: [
                         Positioned(
-                          left: 16,
-                          top: 15.5,
+                          left: screenWidth * 0.04,
+                          top: kakaoBtnHeight * 0.5 - kakaoIconSize / 2,
                           child: Image.asset(
                             'assets/kakao_icon.png',
-                            width: 14,
-                            height: 14,
+                            width: kakaoIconSize,
+                            height: kakaoIconSize,
                           ),
                         ),
-                        const Text(
+                        Text(
                           '카카오 로그인',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: kakaoFontSize,
                             fontWeight: FontWeight.w400,
                             fontFamily: 'NotoSansKR',
                             color: Colors.black,
@@ -167,17 +172,17 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
 
-              // 약관 안내 텍스트
+              // ✅ 약관 안내 텍스트
               Positioned(
                 bottom: screenHeight * 0.03,
                 left: 0,
                 right: 0,
-                child: const Text(
+                child: Text(
                   '로그인하면 서비스 이용약관 및\n개인정보처리방침에 동의하는 것으로 간주됩니다.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white60,
-                    fontSize: 12,
+                    fontSize: termsFontSize,
                     fontFamily: 'Poppins',
                     height: 1.5,
                   ),

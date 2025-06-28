@@ -6,7 +6,7 @@ import 'myprofile_screen.dart';
 
 class BottomNavScreen extends StatefulWidget {
   final int initialIndex;
-  const BottomNavScreen({super.key, this.initialIndex = 1}); // 기본은 랭킹
+  const BottomNavScreen({super.key, this.initialIndex = 0}); // 기본은 랭킹
 
   @override
   State<BottomNavScreen> createState() => _BottomNavScreenState();

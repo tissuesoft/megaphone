@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:megaphone/screens/notification_screen.dart';
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({super.key});
@@ -49,8 +50,12 @@ class HomeHeader extends StatelessWidget {
                 icon: const Icon(Icons.notifications, color: Colors.black),
                 iconSize: 24,
                 onPressed: () {
-                  print('알림 눌림');
-                  // TODO: 알림 페이지로 이동
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationPage(),
+                    ),
+                  );
                 },
               ),
               Positioned(

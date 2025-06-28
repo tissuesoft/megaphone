@@ -36,7 +36,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: const Icon(Icons.edit, color: Colors.white),
       ),
 
-
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -44,10 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const HomeHeader(),
               const MegaphoneCard(),
               const TimeFilterBar(),
-              SortTabBar(
-                selectedTab: selectedTab,
-                onTabChanged: onTabSelected,
-              ),
+              SortTabBar(selectedTab: selectedTab, onTabChanged: onTabSelected),
               if (selectedTab == 'latest')
                 const MegaphonePostListLatest()
               else

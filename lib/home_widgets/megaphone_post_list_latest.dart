@@ -1,22 +1,31 @@
-// 좋아요 기능 포함 + created_at 변경 없이 정렬 유지되도록 개선
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:megaphone/screens/otherpeople_profile_screen.dart';
 import 'package:megaphone/screens/post_screen.dart';
 
 class MegaphonePostListLatest extends StatefulWidget {
-  const MegaphonePostListLatest({super.key});
+  final DateTime selectedDateTime;
+
+  const MegaphonePostListLatest({
+    super.key,
+    required this.selectedDateTime,
+  });
 
   @override
   State<MegaphonePostListLatest> createState() =>
-      _MegaphonePostListLatestState();
+      MegaphonePostListLatestState(); // ✅ 클래스명 변경
 }
 
-class _MegaphonePostListLatestState extends State<MegaphonePostListLatest> {
+class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
+    with AutomaticKeepAliveClientMixin {
   List<dynamic> posts = [];
   bool isLoading = true;
-  Map<int, int> likeCounts = {}; // board_id -> like count
-  Map<int, bool> likedStates = {}; // board_id -> liked 여부
+  Map<int, int> likeCounts = {};
+  Map<int, bool> likedStates = {};
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -24,14 +33,26 @@ class _MegaphonePostListLatestState extends State<MegaphonePostListLatest> {
     fetchPosts();
   }
 
+  // ✅ 외부에서도 호출 가능한 public 메서드
   Future<void> fetchPosts() async {
     final supabase = Supabase.instance.client;
     try {
       final response = await supabase
           .from('Board')
-          .select('*, Users!inner(*)')
+          .select('''
+            board_id,
+            title,
+            created_at,
+            likes,
+            megaphone_time,
+            Users (
+              user_nickname,
+              user_image,
+              used_megaphone
+            )
+          ''')
           .order('created_at', ascending: false)
-          .limit(20);
+          .limit(50);
 
       setState(() {
         posts = response;
@@ -43,49 +64,60 @@ class _MegaphonePostListLatestState extends State<MegaphonePostListLatest> {
         isLoading = false;
       });
     } catch (e) {
-      print('데이터 불러오기 오류: $e');
+      print('❌ 데이터 불러오기 오류: $e');
       setState(() {
         isLoading = false;
       });
     }
   }
 
-  Future<void> updateLike(int boardId, int newCount) async {
-    final supabase = Supabase.instance.client;
-    final response = await supabase
-        .from('Board')
-        .update({'likes': newCount})
-        .eq('board_id', boardId)
-        .select();
-
-    print('🛠️ updateLike result for board_id=$boardId: $response');
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    super.build(context); // 상태 유지용
 
-    if (posts.isEmpty) {
+    if (isLoading) return const Center(child: CircularProgressIndicator());
+
+    final filteredPosts = posts.where((item) {
+      final rawTime = item['megaphone_time'];
+      if (rawTime == null) return false;
+
+      try {
+        final postDateTime = DateTime.parse(rawTime).toLocal();
+        final selected = widget.selectedDateTime;
+
+        return postDateTime.year == selected.year &&
+            postDateTime.month == selected.month &&
+            postDateTime.day == selected.day &&
+            postDateTime.hour == selected.hour &&
+            postDateTime.minute == selected.minute;
+      } catch (_) {
+        return false;
+      }
+    }).toList();
+
+    if (filteredPosts.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(32),
-        child: Text('게시글이 없습니다.'),
+        child: Text('선택된 날짜와 시간에 해당하는 게시글이 없습니다.'),
       );
     }
 
     return Column(
-      children: posts.map((item) {
+      children: filteredPosts.map((item) {
         final user = item['Users'] ?? {};
-        final createdAt =
-            DateTime.tryParse(item['created_at'] ?? '') ?? DateTime.now();
-        final timeAgo = _getTimeAgo(createdAt);
-        final postTime = item['megaphone_time'] ?? '';
-        final remaining = _getRemainingTime(postTime);
+        final nickname = user['user_nickname'] ?? '알 수 없음';
         final profileImage = user['user_image'] ?? '';
         final isNetworkImage = profileImage.startsWith('http');
         final usedMegaphone =
-            int.tryParse(item['used_megaphone']?.toString() ?? '0') ?? 0;
+            int.tryParse(user['used_megaphone']?.toString() ?? '0') ?? 0;
+
+        final createdAt =
+            DateTime.tryParse(item['created_at'] ?? '') ?? DateTime.now();
+        final postDateTime = DateTime.tryParse(item['megaphone_time'] ?? '') ??
+            DateTime.now();
+        final postTime = DateFormat('HH:mm').format(postDateTime.toLocal());
+        final timeAgo = _getTimeAgo(createdAt);
+        final remaining = _getRemainingTime(postDateTime);
         final boardId = item['board_id'];
         final commentCount = item['comment_count'] ?? 0;
         int likeCount = likeCounts[boardId] ?? 0;
@@ -109,6 +141,7 @@ class _MegaphonePostListLatestState extends State<MegaphonePostListLatest> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 유저 정보 + 시간
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -131,7 +164,7 @@ class _MegaphonePostListLatestState extends State<MegaphonePostListLatest> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          user['user_nickname'] ?? '알 수 없음',
+                          nickname,
                           style: const TextStyle(
                             fontFamily: 'Montserrat',
                             fontSize: 14,
@@ -192,7 +225,7 @@ class _MegaphonePostListLatestState extends State<MegaphonePostListLatest> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const PostScreen()),
+                    MaterialPageRoute(builder: (_) => const PostScreen()),
                   );
                 },
                 child: Text(
@@ -210,14 +243,13 @@ class _MegaphonePostListLatestState extends State<MegaphonePostListLatest> {
                   Row(
                     children: [
                       GestureDetector(
-                        onTap: () async {
+                        onTap: () {
                           setState(() {
                             isLiked = !isLiked;
                             likeCount += isLiked ? 1 : -1;
                             likeCounts[boardId] = likeCount;
                             likedStates[boardId] = isLiked;
                           });
-                          await updateLike(boardId, likeCount);
                         },
                         child: Icon(
                           isLiked ? Icons.favorite : Icons.favorite_border,
@@ -226,21 +258,11 @@ class _MegaphonePostListLatestState extends State<MegaphonePostListLatest> {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        '$likeCount',
-                        style: const TextStyle(fontFamily: 'Montserrat'),
-                      ),
+                      Text('$likeCount'),
                       const SizedBox(width: 16),
-                      Image.asset(
-                        'assets/comment_icon.png',
-                        width: 16,
-                        height: 16,
-                      ),
+                      Image.asset('assets/comment_icon.png', width: 16),
                       const SizedBox(width: 4),
-                      Text(
-                        '$commentCount',
-                        style: const TextStyle(fontFamily: 'Montserrat'),
-                      ),
+                      Text('$commentCount'),
                     ],
                   ),
                   Text(
@@ -262,22 +284,14 @@ class _MegaphonePostListLatestState extends State<MegaphonePostListLatest> {
   String _getTimeAgo(DateTime createdAt) {
     final now = DateTime.now();
     final diff = now.difference(createdAt);
-
     if (diff.inMinutes < 1) return '방금 전';
     if (diff.inMinutes < 60) return '${diff.inMinutes}분 전';
     if (diff.inHours < 24) return '${diff.inHours}시간 전';
     return '${diff.inDays}일 전';
   }
 
-  String _getRemainingTime(String timeStr) {
+  String _getRemainingTime(DateTime target) {
     final now = DateTime.now();
-    final parts = timeStr.split(':');
-    if (parts.length != 2) return '마감 시간 없음';
-
-    final hour = int.tryParse(parts[0]) ?? 0;
-    final minute = int.tryParse(parts[1]) ?? 0;
-    final target = DateTime(now.year, now.month, now.day, hour, minute);
-
     final diff = target.difference(now);
     if (diff.inMinutes <= 0) return '마감됨';
     return '${diff.inHours}시간 ${diff.inMinutes % 60}분 남음';

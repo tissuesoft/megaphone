@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class TimeFilterBar extends StatefulWidget {
-  const TimeFilterBar({super.key});
+  final String selectedTime;
+  final Function(String) onTimeSelected;
+
+  const TimeFilterBar({
+    super.key,
+    required this.selectedTime,
+    required this.onTimeSelected,
+  });
 
   @override
   State<TimeFilterBar> createState() => _TimeFilterBarState();
@@ -10,22 +17,19 @@ class TimeFilterBar extends StatefulWidget {
 
 class _TimeFilterBarState extends State<TimeFilterBar> {
   late final List<String> times;
-  late String selectedTime;
 
   @override
   void initState() {
     super.initState();
     times = _generateTimes();
-    selectedTime = times.first;
   }
 
   List<String> _generateTimes() {
-    final now = DateTime.now().toUtc().add(const Duration(hours: 10)); // ✅ KST 기준
-    final roundedNow = DateTime(now.year, now.month, now.day, now.hour);
+    final now = DateTime.now().toUtc().add(const Duration(hours: 9)); // 한국 시간
+    final roundedNextHour = DateTime(now.year, now.month, now.day, now.hour + 1);
     final formatter = DateFormat('HH:00');
-    return List.generate(7, (i) => formatter.format(roundedNow.add(Duration(hours: i))));
+    return List.generate(6, (i) => formatter.format(roundedNextHour.add(Duration(hours: i))));
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -44,14 +48,10 @@ class _TimeFilterBarState extends State<TimeFilterBar> {
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final time = times[index];
-          final isSelected = time == selectedTime;
+          final isSelected = time == widget.selectedTime;
 
           return GestureDetector(
-            onTap: () {
-              setState(() {
-                selectedTime = time;
-              });
-            },
+            onTap: () => widget.onTimeSelected(time),
             child: Container(
               width: 68,
               height: 36,

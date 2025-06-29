@@ -1,254 +1,285 @@
+// 좋아요 기능 포함 + created_at 변경 없이 정렬 유지되도록 개선
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:megaphone/screens/otherpeople_profile_screen.dart';
-import 'package:megaphone/screens/post_screen.dart'; // ✅ post_screen import 추가
+import 'package:megaphone/screens/post_screen.dart';
 
-class MegaphonePostCard extends StatefulWidget {
-  final String profileImage;
-  final String username;
-  final String? badgeText;
-  final String timeAgo;
-  final String postTime;
-  final String content;
-  final int likes;
-  final int comments;
-  final String remaining;
-
-  const MegaphonePostCard({
-    super.key,
-    required this.profileImage,
-    required this.username,
-    this.badgeText,
-    required this.timeAgo,
-    required this.postTime,
-    required this.content,
-    required this.likes,
-    required this.comments,
-    required this.remaining,
-  });
+class MegaphonePostListLatest extends StatefulWidget {
+  const MegaphonePostListLatest({super.key});
 
   @override
-  State<MegaphonePostCard> createState() => _MegaphonePostCardState();
+  State<MegaphonePostListLatest> createState() =>
+      _MegaphonePostListLatestState();
 }
 
-class _MegaphonePostCardState extends State<MegaphonePostCard> {
-  bool isLiked = false;
-  late int likeCount;
+class _MegaphonePostListLatestState extends State<MegaphonePostListLatest> {
+  List<dynamic> posts = [];
+  bool isLoading = true;
+  Map<int, int> likeCounts = {}; // board_id -> like count
+  Map<int, bool> likedStates = {}; // board_id -> liked 여부
 
   @override
   void initState() {
     super.initState();
-    likeCount = widget.likes;
+    fetchPosts();
   }
 
-  void _toggleLike() {
-    setState(() {
-      isLiked = !isLiked;
-      likeCount += isLiked ? 1 : -1;
-    });
+  Future<void> fetchPosts() async {
+    final supabase = Supabase.instance.client;
+    try {
+      final response = await supabase
+          .from('Board')
+          .select('*, Users!inner(*)')
+          .order('created_at', ascending: false)
+          .limit(20);
+
+      setState(() {
+        posts = response;
+        for (var item in posts) {
+          final boardId = item['board_id'];
+          likeCounts[boardId] = item['likes'] ?? 0;
+          likedStates[boardId] = false;
+        }
+        isLoading = false;
+      });
+    } catch (e) {
+      print('데이터 불러오기 오류: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
-  void _goToProfile(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const OtherProfileScreen()),
-    );
-  }
+  Future<void> updateLike(int boardId, int newCount) async {
+    final supabase = Supabase.instance.client;
+    final response = await supabase
+        .from('Board')
+        .update({'likes': newCount})
+        .eq('board_id', boardId)
+        .select();
 
-  void _goToPostScreen(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const PostScreen()),
-    );
+    print('🛠️ updateLike result for board_id=$boardId: $response');
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _goToPostScreen(context),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFF9CA3AF)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 2,
-              offset: const Offset(0, 1),
-            ),
-          ],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 상단: 프로필 + 이름 + 뱃지 + 작성 시간
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                GestureDetector(
-                  onTap: () => _goToProfile(context),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundImage: AssetImage(widget.profileImage),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        widget.username,
-                        style: const TextStyle(
-                          fontFamily: 'Montserrat',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (posts.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(32),
+        child: Text('게시글이 없습니다.'),
+      );
+    }
+
+    return Column(
+      children: posts.map((item) {
+        final user = item['Users'] ?? {};
+        final createdAt =
+            DateTime.tryParse(item['created_at'] ?? '') ?? DateTime.now();
+        final timeAgo = _getTimeAgo(createdAt);
+        final postTime = item['megaphone_time'] ?? '';
+        final remaining = _getRemainingTime(postTime);
+        final profileImage = user['user_image'] ?? '';
+        final isNetworkImage = profileImage.startsWith('http');
+        final usedMegaphone =
+            int.tryParse(item['used_megaphone']?.toString() ?? '0') ?? 0;
+        final boardId = item['board_id'];
+        final commentCount = item['comment_count'] ?? 0;
+        int likeCount = likeCounts[boardId] ?? 0;
+        bool isLiked = likedStates[boardId] ?? false;
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: const Color(0xFF9CA3AF)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              ),
+            ],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const OtherProfileScreen(),
                         ),
-                      ),
-                      if (widget.badgeText != null &&
-                          widget.badgeText!.isNotEmpty) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFED7AA),
-                            borderRadius: BorderRadius.circular(4),
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundImage: isNetworkImage
+                              ? NetworkImage(profileImage)
+                              : AssetImage(profileImage) as ImageProvider,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          user['user_nickname'] ?? '알 수 없음',
+                          style: const TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
-                          child: Row(
-                            children: [
-                              Image.asset('assets/megaphoneCountIcon.png',
-                                  width: 12, height: 12),
-                              const SizedBox(width: 4),
-                              Text(
-                                widget.badgeText!,
-                                style: const TextStyle(
-                                  fontFamily: 'Roboto',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  color: Color(0xFF9A3412),
+                        ),
+                        if (usedMegaphone > 0) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFED7AA),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              children: [
+                                Image.asset(
+                                  'assets/megaphoneCountIcon.png',
+                                  width: 12,
+                                  height: 12,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$usedMegaphone회',
+                                  style: const TextStyle(
+                                    fontFamily: 'Roboto',
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w400,
+                                    color: Color(0xFF9A3412),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
                       ],
+                    ),
+                  ),
+                  Text(
+                    postTime,
+                    style: const TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                timeAgo,
+                style: const TextStyle(fontFamily: 'Montserrat', fontSize: 12),
+              ),
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PostScreen()),
+                  );
+                },
+                child: Text(
+                  item['title'] ?? '내용 없음',
+                  style: const TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () async {
+                          setState(() {
+                            isLiked = !isLiked;
+                            likeCount += isLiked ? 1 : -1;
+                            likeCounts[boardId] = likeCount;
+                            likedStates[boardId] = isLiked;
+                          });
+                          await updateLike(boardId, likeCount);
+                        },
+                        child: Icon(
+                          isLiked ? Icons.favorite : Icons.favorite_border,
+                          size: 16,
+                          color: isLiked ? Colors.red : Colors.black,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$likeCount',
+                        style: const TextStyle(fontFamily: 'Montserrat'),
+                      ),
+                      const SizedBox(width: 16),
+                      Image.asset(
+                        'assets/comment_icon.png',
+                        width: 16,
+                        height: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$commentCount',
+                        style: const TextStyle(fontFamily: 'Montserrat'),
+                      ),
                     ],
                   ),
-                ),
-                Text(
-                  widget.postTime,
-                  style: const TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontSize: 12,
+                  Text(
+                    remaining,
+                    style: const TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              widget.timeAgo,
-              style: const TextStyle(
-                fontFamily: 'Montserrat',
-                fontSize: 12,
+                ],
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              widget.content,
-              style: const TextStyle(
-                fontFamily: 'Montserrat',
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: _toggleLike,
-                      child: Icon(
-                        isLiked ? Icons.favorite : Icons.favorite_border,
-                        size: 16,
-                        color: isLiked ? Colors.red : Colors.black,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$likeCount',
-                      style: const TextStyle(fontFamily: 'Montserrat'),
-                    ),
-                    const SizedBox(width: 16),
-                    Image.asset(
-                      'assets/comment_icon.png',
-                      width: 16,
-                      height: 16,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${widget.comments}',
-                      style: const TextStyle(fontFamily: 'Montserrat'),
-                    ),
-                  ],
-                ),
-                Text(
-                  widget.remaining,
-                  style: const TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
-}
 
-class MegaphonePostListLatest extends StatelessWidget {
-  const MegaphonePostListLatest({super.key});
+  String _getTimeAgo(DateTime createdAt) {
+    final now = DateTime.now();
+    final diff = now.difference(createdAt);
 
-  @override
-  Widget build(BuildContext context) {
-    final dummyPosts = [
-      MegaphonePostCard(
-        profileImage: 'assets/kim1.jpg',
-        username: '박준호',
-        badgeText: '1회',
-        timeAgo: '2분 전',
-        postTime: '12:00',
-        content: '오늘 점심 메뉴 추천해주세요! 학교 앞 맛집 아시는 분?',
-        likes: 24,
-        comments: 7,
-        remaining: '4시간 남음',
-      ),
-      MegaphonePostCard(
-        profileImage: 'assets/bab.jpg',
-        username: '밥순이',
-        badgeText: '',
-        timeAgo: '5분 전',
-        postTime: '12:00',
-        content: '가나다라마바사 아자차카타파하!',
-        likes: 18,
-        comments: 3,
-        remaining: '4시간 남음',
-      ),
-      MegaphonePostCard(
-        profileImage: 'assets/choi.jpg',
-        username: '최민우',
-        badgeText: '134회',
-        timeAgo: '8분 전',
-        postTime: '12:00',
-        content: '급해요! 2교시 수업 교실 바뀐 곳 아시는 분 있나요?',
-        likes: 12,
-        comments: 5,
-        remaining: '4시간 남음',
-      ),
-    ];
+    if (diff.inMinutes < 1) return '방금 전';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}분 전';
+    if (diff.inHours < 24) return '${diff.inHours}시간 전';
+    return '${diff.inDays}일 전';
+  }
 
-    return Column(children: dummyPosts);
+  String _getRemainingTime(String timeStr) {
+    final now = DateTime.now();
+    final parts = timeStr.split(':');
+    if (parts.length != 2) return '마감 시간 없음';
+
+    final hour = int.tryParse(parts[0]) ?? 0;
+    final minute = int.tryParse(parts[1]) ?? 0;
+    final target = DateTime(now.year, now.month, now.day, hour, minute);
+
+    final diff = target.difference(now);
+    if (diff.inMinutes <= 0) return '마감됨';
+    return '${diff.inHours}시간 ${diff.inMinutes % 60}분 남음';
   }
 }

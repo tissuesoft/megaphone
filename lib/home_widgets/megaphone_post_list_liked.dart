@@ -211,8 +211,9 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const PostScreen()),
-                  );
+                      MaterialPageRoute(
+                        builder: (_) => PostScreen(boardId: item['board_id']),
+                      )                  );
                 },
                 child: Text(
                   item['title'] ?? '내용 없음',

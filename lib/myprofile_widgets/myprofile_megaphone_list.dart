@@ -45,7 +45,9 @@ class MyProfileHighlightList extends StatelessWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const PostScreen()), // ✅ 클릭 시 이동
+              MaterialPageRoute(
+                builder: (context) => const PostScreen(boardId: 1), // ✅ 임시 boardId 전달
+              ),
             );
           },
           child: Container(

@@ -214,8 +214,9 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const PostScreen()),
-                  );
+                      MaterialPageRoute(
+                        builder: (_) => PostScreen(boardId: item['board_id']),
+                      )                  );
                 },
                 child: Text(
                   item['title'] ?? '내용 없음',

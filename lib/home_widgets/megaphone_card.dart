@@ -96,7 +96,9 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const PostScreen()),
+          MaterialPageRoute(
+            builder: (_) => PostScreen(boardId: megaphonePost['board_id']),
+          ),
         );
       },
       child: Container(

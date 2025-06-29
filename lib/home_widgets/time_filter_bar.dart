@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class TimeFilterBar extends StatefulWidget {
-  final String selectedTime;
-  final Function(String) onTimeSelected;
+  final DateTime selectedDateTime;
+  final Function(DateTime) onTimeSelected;
 
   const TimeFilterBar({
     super.key,
-    required this.selectedTime,
+    required this.selectedDateTime,
     required this.onTimeSelected,
   });
 
@@ -16,39 +16,38 @@ class TimeFilterBar extends StatefulWidget {
 }
 
 class _TimeFilterBarState extends State<TimeFilterBar> {
-  late final List<String> times;
+  late final List<DateTime> timeList;
 
   @override
   void initState() {
     super.initState();
-    times = _generateTimes();
+    timeList = _generateNext6Hours();
   }
 
-  List<String> _generateTimes() {
-    final now = DateTime.now().toUtc().add(const Duration(hours: 9)); // 한국 시간
-    final roundedNextHour = DateTime(now.year, now.month, now.day, now.hour + 1);
-    final formatter = DateFormat('HH:00');
-    return List.generate(6, (i) => formatter.format(roundedNextHour.add(Duration(hours: i))));
+  List<DateTime> _generateNext6Hours() {
+    final now = DateTime.now().toUtc().add(const Duration(hours: 9));
+    final nextHour = DateTime(now.year, now.month, now.day, now.hour + 1);
+    return List.generate(6, (i) => nextHour.add(Duration(hours: i)));
   }
 
   @override
   Widget build(BuildContext context) {
+    final formatter = DateFormat('HH:00');
+
     return Container(
       height: 53,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFF9CA3AF), width: 1),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0xFF9CA3AF))),
       ),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        itemCount: times.length,
+        itemCount: timeList.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
-          final time = times[index];
-          final isSelected = time == widget.selectedTime;
+          final time = timeList[index];
+          final isSelected = time == widget.selectedDateTime;
 
           return GestureDetector(
             onTap: () => widget.onTimeSelected(time),
@@ -61,7 +60,7 @@ class _TimeFilterBarState extends State<TimeFilterBar> {
               ),
               alignment: Alignment.center,
               child: Text(
-                time,
+                formatter.format(time),
                 style: TextStyle(
                   fontFamily: 'Roboto',
                   fontSize: 14,

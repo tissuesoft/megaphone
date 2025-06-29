@@ -4,7 +4,7 @@ import '../home_widgets/home_header.dart';
 import '../home_widgets/megaphone_card.dart';
 import '../home_widgets/time_filter_bar.dart';
 import '../home_widgets/sort_tab_bar.dart';
-import '../home_widgets/megaphone_post_list_latest.dart'; // <-- 여기도 수정 반영됨
+import '../home_widgets/megaphone_post_list_latest.dart';
 import '../home_widgets/megaphone_post_list_liked.dart';
 import '../screens/write_post_screen.dart';
 
@@ -17,10 +17,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String selectedTab = 'latest';
-  String selectedTime = '';
-  DateTime selectedDate = DateTime.now();
+  late DateTime selectedDateTime;
 
-  // ✅ 최신순 리스트를 제어할 수 있는 키
   final GlobalKey<MegaphonePostListLatestState> latestKey =
   GlobalKey<MegaphonePostListLatestState>();
 
@@ -29,33 +27,19 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     final now = DateTime.now().toUtc().add(const Duration(hours: 9));
     final nextHour = DateTime(now.year, now.month, now.day, now.hour + 1);
-    final formatter = DateFormat('HH:00');
-    selectedTime = formatter.format(nextHour);
+    selectedDateTime = nextHour; // 시작은 다음 시간
+  }
+
+  void onTimeSelected(DateTime time) {
+    setState(() {
+      selectedDateTime = time;
+    });
   }
 
   void onTabSelected(String tab) {
     setState(() {
       selectedTab = tab;
     });
-  }
-
-  void onTimeSelected(String time) {
-    setState(() {
-      selectedTime = time;
-    });
-  }
-
-  DateTime get selectedDateTime {
-    final parts = selectedTime.split(':');
-    final hour = int.parse(parts[0]);
-    final minute = int.parse(parts[1]);
-    return DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-      hour,
-      minute,
-    );
   }
 
   @override
@@ -70,17 +54,15 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
         backgroundColor: const Color(0xFFFF6B35),
-        elevation: 6,
-        shape: const CircleBorder(),
         child: const Icon(Icons.edit, color: Colors.white),
       ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
             if (selectedTab == 'latest') {
-              await latestKey.currentState?.fetchPosts(); // ✅ 핵심
+              await latestKey.currentState?.fetchPosts();
             }
-            setState(() {}); // 스크롤 유지 및 새로 빌드
+            setState(() {});
           },
           child: ListView(
             padding: EdgeInsets.zero,
@@ -88,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const HomeHeader(),
               const MegaphoneCard(),
               TimeFilterBar(
-                selectedTime: selectedTime,
+                selectedDateTime: selectedDateTime,
                 onTimeSelected: onTimeSelected,
               ),
               SortTabBar(
@@ -97,11 +79,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               if (selectedTab == 'latest')
                 MegaphonePostListLatest(
-                  key: latestKey, // ✅ 연결
+                  key: latestKey,
                   selectedDateTime: selectedDateTime,
                 )
               else
-                const MegaphonePostListLiked(),
+                MegaphonePostListLiked(
+                  selectedDateTime: selectedDateTime,
+                )
             ],
           ),
         ),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:marquee/marquee.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:megaphone/screens/otherpeople_profile_screen.dart';
-import 'package:megaphone/screens/post_screen.dart'; // ✅ 추가
+import 'package:megaphone/screens/post_screen.dart';
 
 class MegaphoneCard extends StatefulWidget {
   const MegaphoneCard({super.key});
@@ -12,35 +14,91 @@ class MegaphoneCard extends StatefulWidget {
 
 class _MegaphoneCardState extends State<MegaphoneCard> {
   bool isLiked = false;
+  dynamic megaphonePost;
+  bool isLoading = true;
 
-  void toggleLike() {
-    setState(() {
-      isLiked = !isLiked;
-    });
+  @override
+  void initState() {
+    super.initState();
+    fetchTopPostForCurrentHour();
   }
 
-  void goToProfile() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const OtherProfileScreen(),
-      ),
-    );
-  }
+  Future<void> fetchTopPostForCurrentHour() async {
+    final supabase = Supabase.instance.client;
 
-  void goToPostDetail() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const PostScreen(), // ✅ post_screen.dart로 이동
-      ),
-    );
+    final now = DateTime.now();
+    final targetHour = DateTime(now.year, now.month, now.day, now.hour);
+    final formatted = DateFormat("yyyy-MM-dd HH:00:00").format(targetHour);
+
+    print('🕐 정확히 일치하는 시간 문자열: $formatted');
+
+    try {
+      final response = await supabase
+          .from('Board')
+          .select('''
+            board_id,
+            title,
+            likes,
+            megaphone_time,
+            Users (
+              user_nickname,
+              user_image,
+              used_megaphone
+            )
+          ''')
+          .filter('megaphone_time', 'eq', formatted)
+          .order('likes', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      print('📦 Supabase 응답: $response');
+
+      setState(() {
+        megaphonePost = response;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('❌ Supabase 오류: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (megaphonePost == null) {
+      return Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text(
+          '아직 이 시간대에 울린 고확이 없어요!',
+          style: TextStyle(fontFamily: 'Montserrat'),
+        ),
+      );
+    }
+
+    final user = megaphonePost['Users'] ?? {};
+    final nickname = user['user_nickname'] ?? '알 수 없음';
+    final profileImage = user['user_image'] ?? '';
+    final usedMegaphone = int.tryParse(user['used_megaphone']?.toString() ?? '0') ?? 0;
+    final isNetworkImage = profileImage.startsWith('http');
+
     return GestureDetector(
-      onTap: goToPostDetail, // ✅ 카드 전체 클릭 시 post_screen으로 이동
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PostScreen()),
+        );
+      },
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -86,9 +144,9 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(999),
                   ),
-                  child: const Text(
-                    '11:00',
-                    style: TextStyle(
+                  child: Text(
+                    formatHour(megaphonePost['megaphone_time']),
+                    style: const TextStyle(
                       fontFamily: 'Montserrat',
                       fontWeight: FontWeight.w500,
                       fontSize: 12,
@@ -100,12 +158,12 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
             ),
             const SizedBox(height: 12),
 
-            // 본문 텍스트 (전광판 효과)
+            // 본문 텍스트 (전광판)
             SizedBox(
               height: 28,
               width: double.infinity,
               child: Marquee(
-                text: '점심시간에 라면 먹는 사람 손들 어봐 푸쵸핸즈업 푸쵸핸즈업 🍜',
+                text: megaphonePost['title'] ?? '',
                 style: const TextStyle(
                   fontFamily: 'Montserrat',
                   fontWeight: FontWeight.w700,
@@ -129,8 +187,28 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
               children: [
                 // 좋아요 버튼
                 GestureDetector(
-                  onTap: () {
-                    toggleLike();
+                  onTap: () async {
+                    setState(() {
+                      isLiked = !isLiked;
+                    });
+
+                    final supabase = Supabase.instance.client;
+                    final boardId = megaphonePost['board_id'];
+                    final currentLikes = megaphonePost['likes'] ?? 0;
+                    final newLikeCount = isLiked ? currentLikes + 1 : currentLikes - 1;
+
+                    try {
+                      await supabase
+                          .from('Board')
+                          .update({'likes': newLikeCount})
+                          .eq('board_id', boardId);
+
+                      setState(() {
+                        megaphonePost['likes'] = newLikeCount;
+                      });
+                    } catch (e) {
+                      print('❌ 좋아요 업데이트 실패: $e');
+                    }
                   },
                   child: Row(
                     children: [
@@ -140,9 +218,9 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
                         color: isLiked ? Colors.red : Colors.white,
                       ),
                       const SizedBox(width: 4),
-                      const Text(
-                        '1,247',
-                        style: TextStyle(
+                      Text(
+                        megaphonePost['likes'].toString(),
+                        style: const TextStyle(
                           fontFamily: 'Montserrat',
                           fontSize: 14,
                           color: Colors.white,
@@ -153,21 +231,26 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
                 ),
                 const SizedBox(width: 16),
 
-                // 프로필 + 이름
+                // 프로필 영역 (탭 시 상대방 프로필 화면으로 이동)
                 GestureDetector(
                   onTap: () {
-                    goToProfile();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const OtherProfileScreen()),
+                    );
                   },
                   child: Row(
                     children: [
-                      const CircleAvatar(
+                      CircleAvatar(
                         radius: 12,
-                        backgroundImage: AssetImage('assets/kimyongsik.jpg'),
+                        backgroundImage: isNetworkImage
+                            ? NetworkImage(profileImage)
+                            : const AssetImage('assets/default_profile.png') as ImageProvider,
                       ),
                       const SizedBox(width: 6),
-                      const Text(
-                        '김고확',
-                        style: TextStyle(
+                      Text(
+                        nickname,
+                        style: const TextStyle(
                           fontFamily: 'Montserrat',
                           fontSize: 14,
                           color: Colors.white,
@@ -179,37 +262,47 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
                 const SizedBox(width: 8),
 
                 // 고확 배지
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFED7AA),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    children: [
-                      Image.asset(
-                        'assets/megaphoneCountIcon.png',
-                        width: 12,
-                        height: 12,
-                      ),
-                      const SizedBox(width: 4),
-                      const Text(
-                        '145회',
-                        style: TextStyle(
-                          fontFamily: 'Roboto',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xFF9A3412),
+                if (usedMegaphone > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFED7AA),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      children: [
+                        Image.asset(
+                          'assets/megaphoneCountIcon.png',
+                          width: 12,
+                          height: 12,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Text(
+                          '$usedMegaphone회',
+                          style: const TextStyle(
+                            fontFamily: 'Roboto',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xFF9A3412),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  String formatHour(dynamic timestamp) {
+    try {
+      final dt = DateTime.parse(timestamp);
+      return '${dt.hour.toString().padLeft(2, '0')}:00';
+    } catch (_) {
+      return '시간오류';
+    }
   }
 }

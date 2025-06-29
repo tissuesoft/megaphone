@@ -2,15 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:megaphone/screens/otherpeople_profile_screen.dart';
 
 class PostDetailContentCard extends StatefulWidget {
-  const PostDetailContentCard({super.key});
+  final dynamic postData;
+
+  const PostDetailContentCard({super.key, required this.postData});
 
   @override
   State<PostDetailContentCard> createState() => _PostDetailContentCardState();
 }
 
 class _PostDetailContentCardState extends State<PostDetailContentCard> {
-  bool isLiked = false;
-  int likeCount = 234;
+  late bool isLiked;
+  late int likeCount;
+
+  @override
+  void initState() {
+    super.initState();
+    isLiked = false;
+    likeCount = widget.postData['likes'] ?? 0;
+  }
 
   void _toggleLike() {
     setState(() {
@@ -22,16 +31,67 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
   void _goToProfile() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const OtherProfileScreen()),
+      MaterialPageRoute(builder: (_) => const OtherProfileScreen()),
     );
+  }
+
+  String _getRemainingTimeText(String rawTime) {
+    try {
+      final deadline = DateTime.parse(rawTime);
+      final now = DateTime.now();
+      final remaining = deadline.difference(now);
+
+      if (remaining.isNegative) {
+        return '마감되었습니다';
+      }
+
+      final hours = remaining.inHours;
+      final minutes = remaining.inMinutes.remainder(60);
+
+      if (hours == 0 && minutes > 0) {
+        return '마감까지 ${minutes}분';
+      } else if (hours > 0 && minutes == 0) {
+        return '마감까지 ${hours}시간';
+      } else {
+        return '마감까지 ${hours}시간 ${minutes}분';
+      }
+    } catch (e) {
+      return '마감 시간 계산 불가';
+    }
+  }
+
+  String _getTimeAgoText(String createdAtString) {
+    try {
+      final createdAt = DateTime.parse(createdAtString).toLocal();
+      final now = DateTime.now();
+      final difference = now.difference(createdAt);
+
+      if (difference.inMinutes < 1) return '방금 전';
+      if (difference.inMinutes < 60) return '${difference.inMinutes}분 전';
+      if (difference.inHours < 24) return '${difference.inHours}시간 전';
+      if (difference.inDays == 1) return '어제';
+      if (difference.inDays < 7) return '${difference.inDays}일 전';
+      return '${createdAt.month}월 ${createdAt.day}일';
+    } catch (e) {
+      return '시간 알 수 없음';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final data = widget.postData;
+    final user = data['Users'] ?? {};
+    final userNickname = user['user_nickname'] ?? '알 수 없음';
+    final userId = user['user_id']?.toString() ?? '알 수 없음';
+    final usedMegaphone = int.tryParse(user['used_megaphone']?.toString() ?? '0') ?? 0;
+    final title = data['title'] ?? '';
+    final createdAt = data['created_at'] ?? '';
+    final megaphoneTime = data['megaphone_time'] ?? '';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 상단: 프로필 + 이름 + 배지 + 시간
+        // 상단: 프로필, 닉네임, 배지
         Container(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
           decoration: const BoxDecoration(
@@ -59,9 +119,9 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
                         spacing: 6,
                         runSpacing: 4,
                         children: [
-                          const Text(
-                            '드립킹',
-                            style: TextStyle(
+                          Text(
+                            userNickname,
+                            style: const TextStyle(
                               fontFamily: 'Roboto',
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -79,9 +139,9 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
                               children: [
                                 Image.asset('assets/megaphoneCountIcon.png', width: 12, height: 12),
                                 const SizedBox(width: 4),
-                                const Text(
-                                  '3회',
-                                  style: TextStyle(
+                                Text(
+                                  '$usedMegaphone회',
+                                  style: const TextStyle(
                                     fontFamily: 'Roboto',
                                     fontSize: 12,
                                     color: Color(0xFF9A3412),
@@ -90,35 +150,12 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
                               ],
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFF6B35),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Icon(Icons.campaign, size: 14, color: Colors.white),
-                                SizedBox(width: 6),
-                                Text(
-                                  '12:00 고성능 확성기',
-                                  style: TextStyle(
-                                    fontFamily: 'Roboto',
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 6),
-                      const Text(
-                        '3분 전',
-                        style: TextStyle(
+                      Text(
+                        _getTimeAgoText(createdAt),
+                        style: const TextStyle(
                           fontFamily: 'Roboto',
                           fontSize: 14,
                           color: Color(0xFF6B7280),
@@ -133,11 +170,11 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
         ),
 
         // 본문 텍스트
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           child: Text(
-            '오늘 점심 뭐 먹지 고민하는 사람들 손🙋‍♂️\n결론: 편의점 삼각김밥이 답이다 ㅋㅋㅋ #현실적인조언 #점심메뉴추천',
-            style: TextStyle(
+            title,
+            style: const TextStyle(
               fontFamily: 'Roboto',
               fontSize: 18,
               height: 1.6,
@@ -193,9 +230,9 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
                   ),
                 ],
               ),
-              const Text(
-                '마감까지 2시간 57분',
-                style: TextStyle(
+              Text(
+                _getRemainingTimeText(megaphoneTime),
+                style: const TextStyle(
                   fontFamily: 'Roboto',
                   fontSize: 14,
                   color: Color(0xFF6B7280),

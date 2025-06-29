@@ -54,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
         backgroundColor: const Color(0xFFFF6B35),
+        shape: const CircleBorder(), // ✅ 항상 원형 버튼 유지
         child: const Icon(Icons.edit, color: Colors.white),
       ),
       body: SafeArea(

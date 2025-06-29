@@ -13,8 +13,7 @@ class MegaphonePostListLatest extends StatefulWidget {
   });
 
   @override
-  State<MegaphonePostListLatest> createState() =>
-      MegaphonePostListLatestState(); // ✅ 클래스명 변경
+  State<MegaphonePostListLatest> createState() => MegaphonePostListLatestState();
 }
 
 class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
@@ -33,7 +32,6 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
     fetchPosts();
   }
 
-  // ✅ 외부에서도 호출 가능한 public 메서드
   Future<void> fetchPosts() async {
     final supabase = Supabase.instance.client;
     try {
@@ -73,7 +71,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // 상태 유지용
+    super.build(context);
 
     if (isLoading) return const Center(child: CircularProgressIndicator());
 
@@ -95,6 +93,13 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
       }
     }).toList();
 
+    // ✅ 최신순 정렬
+    filteredPosts.sort((a, b) {
+      final aCreated = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(2000);
+      final bCreated = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(2000);
+      return bCreated.compareTo(aCreated); // 최신순
+    });
+
     if (filteredPosts.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(32),
@@ -108,13 +113,10 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
         final nickname = user['user_nickname'] ?? '알 수 없음';
         final profileImage = user['user_image'] ?? '';
         final isNetworkImage = profileImage.startsWith('http');
-        final usedMegaphone =
-            int.tryParse(user['used_megaphone']?.toString() ?? '0') ?? 0;
+        final usedMegaphone = int.tryParse(user['used_megaphone']?.toString() ?? '0') ?? 0;
 
-        final createdAt =
-            DateTime.tryParse(item['created_at'] ?? '') ?? DateTime.now();
-        final postDateTime = DateTime.tryParse(item['megaphone_time'] ?? '') ??
-            DateTime.now();
+        final createdAt = DateTime.tryParse(item['created_at'] ?? '') ?? DateTime.now();
+        final postDateTime = DateTime.tryParse(item['megaphone_time'] ?? '') ?? DateTime.now();
         final postTime = DateFormat('HH:mm').format(postDateTime.toLocal());
         final timeAgo = _getTimeAgo(createdAt);
         final remaining = _getRemainingTime(postDateTime);
@@ -141,7 +143,6 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 유저 정보 + 시간
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -149,9 +150,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const OtherProfileScreen(),
-                        ),
+                        MaterialPageRoute(builder: (_) => const OtherProfileScreen()),
                       );
                     },
                     child: Row(
@@ -174,21 +173,14 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                         if (usedMegaphone > 0) ...[
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
                               color: const Color(0xFFFED7AA),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Row(
                               children: [
-                                Image.asset(
-                                  'assets/megaphoneCountIcon.png',
-                                  width: 12,
-                                  height: 12,
-                                ),
+                                Image.asset('assets/megaphoneCountIcon.png', width: 12, height: 12),
                                 const SizedBox(width: 4),
                                 Text(
                                   '$usedMegaphone회',
@@ -208,10 +200,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                   ),
                   Text(
                     postTime,
-                    style: const TextStyle(
-                      fontFamily: 'Montserrat',
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(fontFamily: 'Montserrat', fontSize: 12),
                   ),
                 ],
               ),
@@ -230,10 +219,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                 },
                 child: Text(
                   item['title'] ?? '내용 없음',
-                  style: const TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontSize: 16,
-                  ),
+                  style: const TextStyle(fontFamily: 'Montserrat', fontSize: 16),
                 ),
               ),
               const SizedBox(height: 12),
@@ -243,13 +229,24 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                   Row(
                     children: [
                       GestureDetector(
-                        onTap: () {
+                        onTap: () async {
                           setState(() {
                             isLiked = !isLiked;
                             likeCount += isLiked ? 1 : -1;
                             likeCounts[boardId] = likeCount;
                             likedStates[boardId] = isLiked;
                           });
+
+                          // ✅ Supabase에 좋아요 수 업데이트
+                          final supabase = Supabase.instance.client;
+                          try {
+                            await supabase
+                                .from('Board')
+                                .update({'likes': likeCount})
+                                .eq('board_id', boardId);
+                          } catch (e) {
+                            print('❌ 좋아요 업데이트 실패: $e');
+                          }
                         },
                         child: Icon(
                           isLiked ? Icons.favorite : Icons.favorite_border,
@@ -267,10 +264,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                   ),
                   Text(
                     remaining,
-                    style: const TextStyle(
-                      fontFamily: 'Montserrat',
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(fontFamily: 'Montserrat', fontSize: 12),
                   ),
                 ],
               ),

@@ -39,6 +39,7 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
             created_at,
             likes,
             megaphone_time,
+            Comment(count),
             Users (
               user_nickname,
               user_image,
@@ -110,7 +111,9 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
         final timeAgo = _getTimeAgo(createdAt);
         final remaining = _getRemainingTime(postDateTime);
         final boardId = item['board_id'];
-        final commentCount = item['comment_count'] ?? 0;
+        final commentCount = item['Comment'] is List && item['Comment'].isNotEmpty
+            ? item['Comment'][0]['count'] ?? 0
+            : 0;
         int likeCount = likeCounts[boardId] ?? 0;
         bool isLiked = likedStates[boardId] ?? false;
 

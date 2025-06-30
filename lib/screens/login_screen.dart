@@ -33,6 +33,12 @@ class _LoginScreenState extends State<LoginScreen>
       print('사용자 ID: ${user.id}');
       print('닉네임: ${user.kakaoAccount?.profile?.nickname}');
       print('이메일: ${user.kakaoAccount?.email}');
+
+      // 4. 홈 화면으로 이동
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const BottomNavScreen()),
+      );
     } catch (error) {
       print('카카오 로그인 실패: $error');
     }
@@ -85,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen>
         child: SafeArea(
           child: Stack(
             children: [
-              // ✅ 둥둥 떠있는 아이콘 (boxShadow 유지)
+              // ✅ 둥둥 떠있는 아이콘
               Positioned(
                 top: iconTop,
                 left: 0,
@@ -144,9 +150,7 @@ class _LoginScreenState extends State<LoginScreen>
                 left: screenWidth * 0.12,
                 right: screenWidth * 0.12,
                 child: GestureDetector(
-                  onTap: () {
-                    kakaoLogin();
-                  },
+                  onTap: kakaoLogin,
                   child: Container(
                     height: kakaoBtnHeight,
                     decoration: BoxDecoration(

@@ -43,6 +43,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
             created_at,
             likes,
             megaphone_time,
+            Comment(count),
             Users (
               user_nickname,
               user_image,
@@ -121,7 +122,9 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
         final timeAgo = _getTimeAgo(createdAt);
         final remaining = _getRemainingTime(postDateTime);
         final boardId = item['board_id'];
-        final commentCount = item['comment_count'] ?? 0;
+        final commentCount = item['Comment'] is List && item['Comment'].isNotEmpty
+            ? item['Comment'][0]['count'] ?? 0
+            : 0;
         int likeCount = likeCounts[boardId] ?? 0;
         bool isLiked = likedStates[boardId] ?? false;
 
@@ -214,9 +217,10 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                 onTap: () {
                   Navigator.push(
                     context,
-                      MaterialPageRoute(
-                        builder: (_) => PostScreen(boardId: item['board_id']),
-                      )                  );
+                    MaterialPageRoute(
+                      builder: (_) => PostScreen(boardId: item['board_id']),
+                    ),
+                  );
                 },
                 child: Text(
                   item['title'] ?? '내용 없음',
@@ -278,7 +282,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                         '$commentCount',
                         style: const TextStyle(
                           fontSize: 14,
-                          color: Color(0xFFFF6B35), // ← 댓글 숫자 색상 변경
+                          color: Color(0xFFFF6B35),
                           fontFamily: 'Montserrat',
                           fontWeight: FontWeight.w500,
                         ),

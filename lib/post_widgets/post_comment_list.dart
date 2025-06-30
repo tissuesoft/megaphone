@@ -39,7 +39,7 @@ class _PostCommentListState extends State<PostCommentList> {
             )
           ''')
           .eq('board_id', widget.boardId)
-          .order('created_at', ascending: false);
+          .order('comment_id', ascending: false); // ✅ 댓글 ID 기준 정렬
 
       setState(() {
         comments = response;
@@ -143,7 +143,7 @@ class _PostCommentItemState extends State<PostCommentItem> {
   void initState() {
     super.initState();
     isLiked = false;
-    likeCount = widget.likeCount; // 여기가 중요한 초기화!
+    likeCount = widget.likeCount;
   }
 
   void _toggleLike() async {
@@ -222,8 +222,11 @@ class _PostCommentItemState extends State<PostCommentItem> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Image.asset('assets/megaphoneCountIcon.png',
-                                      width: 12, height: 12),
+                                  Image.asset(
+                                    'assets/megaphoneCountIcon.png',
+                                    width: 12,
+                                    height: 12,
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     widget.badge!,

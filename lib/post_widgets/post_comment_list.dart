@@ -8,19 +8,31 @@ class PostCommentList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
-        Padding(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text(
-            '댓글 18개',
-            style: TextStyle(
-              fontFamily: 'Roboto',
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF111827),
-            ),
+      children: [
+        SizedBox(height: 0),
+        Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assets/comment_icon.png',
+                width: 16,
+                height: 16,
+              ),
+              SizedBox(width: 6),
+              Text(
+                '18',
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFFF6B35),
+                ),
+              ),
+            ],
           ),
         ),
+        SizedBox(height: 8),
         Divider(height: 1, color: Color(0xFFF3F4F6)),
 
         PostCommentItem(
@@ -191,32 +203,27 @@ class _PostCommentItemState extends State<PostCommentItem> {
                             const SizedBox(width: 16),
                             GestureDetector(
                               onTap: _toggleLike,
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isLiked ? Icons.favorite : Icons.favorite_border,
-                                    size: 14,
-                                    color: isLiked ? Colors.red : const Color(0xFFFF6B35),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '$currentLikes',
-                                    style: const TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 12,
-                                      color: Color(0xFF6B7280),
+                              behavior: HitTestBehavior.translucent,
+                              child: Padding(
+                                padding: const EdgeInsets.all(2.0),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      isLiked ? Icons.favorite : Icons.favorite_border,
+                                      size: 14,
+                                      color: Color(0xFFFF6B35),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            const Text(
-                              '답글',
-                              style: TextStyle(
-                                fontFamily: 'Roboto',
-                                fontSize: 12,
-                                color: Color(0xFF6B7280),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '$currentLikes',
+                                      style: const TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 12,
+                                        color: Color(0xFF6B7280),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],

@@ -82,7 +82,6 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
     final data = widget.postData;
     final user = data['Users'] ?? {};
     final userNickname = user['user_nickname'] ?? '알 수 없음';
-    final userId = user['user_id']?.toString() ?? '알 수 없음';
     final usedMegaphone = int.tryParse(user['used_megaphone']?.toString() ?? '0') ?? 0;
     final title = data['title'] ?? '';
     final createdAt = data['created_at'] ?? '';
@@ -91,7 +90,7 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 상단: 프로필, 닉네임, 배지
+        // 상단: 프로필
         Container(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
           decoration: const BoxDecoration(
@@ -183,62 +182,55 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
           ),
         ),
 
-        // 좋아요 / 댓글 / 마감
+        // 하단: 크라운 아이콘 + 마감 텍스트
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: _toggleLike,
-                    child: Row(
-                      children: [
-                        Icon(
-                          isLiked ? Icons.favorite : Icons.favorite_border,
-                          size: 20,
-                          color: isLiked ? Colors.red : const Color(0xFFFF6B35),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$likeCount',
-                          style: TextStyle(
-                            fontFamily: 'Roboto',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: isLiked ? Colors.red : const Color(0xFFFF6B35),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  Row(
-                    children: const [
-                      Icon(Icons.chat_bubble_outline, size: 18, color: Color(0xFF4B5563)),
-                      SizedBox(width: 4),
+          child: SizedBox(
+            width: double.infinity,
+            height: 24,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // 가운데 크라운 + 좋아요 수
+                GestureDetector(
+                  onTap: _toggleLike,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        isLiked
+                            ? 'assets/crown_icon_likes+1.png'
+                            : 'assets/crown_icon_likes.png',
+                        width: 20,
+                        height: 20,
+                      ),
+                      const SizedBox(width: 4),
                       Text(
-                        '18',
-                        style: TextStyle(
+                        '$likeCount',
+                        style: const TextStyle(
                           fontFamily: 'Roboto',
                           fontSize: 16,
-                          color: Color(0xFF4B5563),
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFFF6B35),
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
-              Text(
-                _getRemainingTimeText(megaphoneTime),
-                style: const TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 14,
-                  color: Color(0xFF6B7280),
                 ),
-              ),
-            ],
+                // 오른쪽 마감 텍스트
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    _getRemainingTimeText(megaphoneTime),
+                    style: const TextStyle(
+                      fontFamily: 'Roboto',
+                      fontSize: 14,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],

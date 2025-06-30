@@ -210,7 +210,7 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
               GestureDetector(
                 onTap: () {
                   Navigator.push(
-                    context,
+                      context,
                       MaterialPageRoute(
                         builder: (_) => PostScreen(boardId: item['board_id']),
                       )                  );
@@ -246,18 +246,40 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
                             print('❌ 좋아요 업데이트 실패: $e');
                           }
                         },
-                        child: Icon(
-                          isLiked ? Icons.favorite : Icons.favorite_border,
-                          size: 16,
-                          color: isLiked ? Colors.red : Colors.black,
+                        child: Row(
+                          children: [
+                            Image.asset(
+                              isLiked
+                                  ? 'assets/crown_icon_likes+1.png'
+                                  : 'assets/crown_icon_likes.png',
+                              width: 16,
+                              height: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$likeCount',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFFFF6B35),
+                                fontFamily: 'Montserrat',
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      Text('$likeCount'),
                       const SizedBox(width: 16),
                       Image.asset('assets/comment_icon.png', width: 16),
                       const SizedBox(width: 4),
-                      Text('$commentCount'),
+                      Text(
+                        '$commentCount',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFFFF6B35),
+                          fontFamily: 'Montserrat',
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ],
                   ),
                   Text(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'bottom_nav_screen.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,6 +14,30 @@ class _LoginScreenState extends State<LoginScreen>
   late AnimationController _controller;
   late Animation<double> _floatAnimation;
 
+  Future<void> kakaoLogin() async {
+    try {
+      OAuthToken token;
+
+      // 1. 카카오톡이 설치되어 있으면 카카오톡으로 로그인
+      if (await isKakaoTalkInstalled()) {
+        token = await UserApi.instance.loginWithKakaoTalk();
+        print('카카오톡으로 로그인 성공');
+      } else {
+        // 2. 없으면 카카오 계정으로 로그인 (웹뷰 방식)
+        token = await UserApi.instance.loginWithKakaoAccount();
+        print('카카오 계정으로 로그인 성공');
+      }
+
+      // 3. 로그인 성공 후 사용자 정보 조회
+      User user = await UserApi.instance.me();
+      print('사용자 ID: ${user.id}');
+      print('닉네임: ${user.kakaoAccount?.profile?.nickname}');
+      print('이메일: ${user.kakaoAccount?.email}');
+    } catch (error) {
+      print('카카오 로그인 실패: $error');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -21,9 +46,10 @@ class _LoginScreenState extends State<LoginScreen>
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
-    _floatAnimation = Tween<double>(begin: 0, end: -15).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _floatAnimation = Tween<double>(
+      begin: 0,
+      end: -15,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -119,12 +145,7 @@ class _LoginScreenState extends State<LoginScreen>
                 right: screenWidth * 0.12,
                 child: GestureDetector(
                   onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const BottomNavScreen(),
-                      ),
-                    );
+                    kakaoLogin();
                   },
                   child: Container(
                     height: kakaoBtnHeight,

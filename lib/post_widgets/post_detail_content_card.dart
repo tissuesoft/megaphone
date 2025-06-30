@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // ✅ 이거 꼭 있어야 함
 import 'package:megaphone/screens/otherpeople_profile_screen.dart';
 
 class PostDetailContentCard extends StatefulWidget {
@@ -21,12 +22,31 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
     likeCount = widget.postData['likes'] ?? 0;
   }
 
-  void _toggleLike() {
+  void _toggleLike() async {
     setState(() {
       isLiked = !isLiked;
       likeCount += isLiked ? 1 : -1;
     });
+
+    final supabase = Supabase.instance.client;
+    final boardId = widget.postData['board_id'];
+
+    try {
+      await supabase
+          .from('Board')
+          .update({'likes': likeCount})
+          .eq('board_id', boardId);
+    } catch (e) {
+      print('❌ 좋아요 업데이트 실패: $e');
+
+      // 실패하면 원래 상태로 롤백
+      setState(() {
+        isLiked = !isLiked;
+        likeCount += isLiked ? 1 : -1;
+      });
+    }
   }
+
 
   void _goToProfile() {
     Navigator.push(

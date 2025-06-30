@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
-import 'screens/bottom_nav_screen.dart';   // 홈 화면
+import 'screens/bottom_nav_screen.dart'; // 홈 화면
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:kakao_flutter_sdk_common/kakao_flutter_sdk_common.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +17,15 @@ void main() async {
   );
   print('db연결완료');
 
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // runApp() 호출 전 Flutter SDK 초기화
+  KakaoSdk.init(
+    //!는 null아님을 보장하는 문법
+    nativeAppKey: dotenv.env['NATIVE_APP_KEY']!,
+    javaScriptAppKey: dotenv.env['JAVASCRIPT_APP_KEY']!,
+  );
+
   runApp(const MegaPhoneApp());
 }
 
@@ -27,10 +37,7 @@ class MegaPhoneApp extends StatelessWidget {
     return MaterialApp(
       title: 'High Performance Megaphone',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Montserrat',
-        primarySwatch: Colors.orange,
-      ),
+      theme: ThemeData(fontFamily: 'Montserrat', primarySwatch: Colors.orange),
       home: const LoginScreen(), // ✅ 앱 시작 시 로그인 화면 먼저 보여줌
     );
   }

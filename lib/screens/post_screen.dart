@@ -71,7 +71,7 @@ class _PostScreenState extends State<PostScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             PostDetailContentCard(postData: postData), // ✅ 통째로 넘김
-            const PostCommentList(),
+            PostCommentList(boardId: widget.boardId),
           ],
         ),
       ),

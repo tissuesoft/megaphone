@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:marquee/marquee.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -16,17 +17,41 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
   bool isLiked = false;
   dynamic megaphonePost;
   bool isLoading = true;
+  Timer? _timer; // ✅ 정시마다 새로고침용 타이머
 
   @override
   void initState() {
     super.initState();
     fetchTopPostForCurrentHour();
+    _startHourlyRefresh(); // ✅ 자동 새로고침 시작
+  }
+
+  void _startHourlyRefresh() {
+    final now = DateTime.now().toUtc().add(const Duration(hours: 9)); // KST 기준
+    final nextFullHour = DateTime(now.year, now.month, now.day, now.hour + 1);
+    final durationUntilNextHour = nextFullHour.difference(now);
+
+    Future.delayed(durationUntilNextHour, () {
+      if (!mounted) return;
+
+      _timer = Timer.periodic(const Duration(hours: 1), (timer) {
+        fetchTopPostForCurrentHour();
+      });
+
+      fetchTopPostForCurrentHour(); // 첫 정시에도 바로 갱신
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel(); // 타이머 해제
+    super.dispose();
   }
 
   Future<void> fetchTopPostForCurrentHour() async {
     final supabase = Supabase.instance.client;
 
-    final now = DateTime.now();
+    final now = DateTime.now().toUtc().add(const Duration(hours: 9)); // KST 기준
     final targetHour = DateTime(now.year, now.month, now.day, now.hour);
     final formatted = DateFormat("yyyy-MM-dd HH:00:00").format(targetHour);
 
@@ -62,6 +87,15 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
       setState(() {
         isLoading = false;
       });
+    }
+  }
+
+  String formatHour(dynamic timestamp) {
+    try {
+      final dt = DateTime.parse(timestamp);
+      return '${dt.hour.toString().padLeft(2, '0')}:00';
+    } catch (_) {
+      return '시간오류';
     }
   }
 
@@ -188,6 +222,7 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
             Row(
               children: [
                 // 좋아요 버튼
+                // 좋아요 버튼 (수정됨)
                 GestureDetector(
                   onTap: () async {
                     setState(() {
@@ -214,10 +249,12 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
                   },
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.favorite,
-                        size: 16,
-                        color: isLiked ? Colors.red : Colors.white,
+                      Image.asset(
+                        isLiked
+                            ? 'assets/crown_icon_megaphone_card+1.png'
+                            : 'assets/crown_icon_megaphone_card.png',
+                        width: 16,
+                        height: 16,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -233,7 +270,7 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
                 ),
                 const SizedBox(width: 16),
 
-                // 프로필 영역 (탭 시 상대방 프로필 화면으로 이동)
+                // 프로필 영역
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -297,14 +334,5 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
         ),
       ),
     );
-  }
-
-  String formatHour(dynamic timestamp) {
-    try {
-      final dt = DateTime.parse(timestamp);
-      return '${dt.hour.toString().padLeft(2, '0')}:00';
-    } catch (_) {
-      return '시간오류';
-    }
   }
 }

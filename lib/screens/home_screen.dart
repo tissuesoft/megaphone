@@ -17,7 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String selectedTab = 'latest';
-  late DateTime selectedDateTime;
+  DateTime? selectedDateTime;
 
   final GlobalKey<MegaphonePostListLatestState> latestKey =
   GlobalKey<MegaphonePostListLatestState>();
@@ -25,9 +25,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+
+    // 앱 실행 시 현재 시각 기준 +1시간을 기본값으로 설정
     final now = DateTime.now().toUtc().add(const Duration(hours: 9));
     final nextHour = DateTime(now.year, now.month, now.day, now.hour + 1);
-    selectedDateTime = nextHour; // 시작은 다음 시간
+    selectedDateTime = nextHour;
   }
 
   void onTimeSelected(DateTime time) {
@@ -44,6 +46,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // selectedDateTime이 아직 null이면 로딩 인디케이터 표시
+    if (selectedDateTime == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       floatingActionButton: FloatingActionButton(
@@ -54,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
         backgroundColor: const Color(0xFFFF6B35),
-        shape: const CircleBorder(), // ✅ 항상 원형 버튼 유지
+        shape: const CircleBorder(),
         child: const Icon(Icons.edit, color: Colors.white),
       ),
       body: SafeArea(
@@ -63,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (selectedTab == 'latest') {
               await latestKey.currentState?.fetchPosts();
             }
-            setState(() {});
+            setState(() {}); // TimeFilterBar rebuild 용도
           },
           child: ListView(
             padding: EdgeInsets.zero,
@@ -71,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const HomeHeader(),
               const MegaphoneCard(),
               TimeFilterBar(
-                selectedDateTime: selectedDateTime,
+                selectedDateTime: selectedDateTime!,
                 onTimeSelected: onTimeSelected,
               ),
               SortTabBar(
@@ -81,11 +90,11 @@ class _HomeScreenState extends State<HomeScreen> {
               if (selectedTab == 'latest')
                 MegaphonePostListLatest(
                   key: latestKey,
-                  selectedDateTime: selectedDateTime,
+                  selectedDateTime: selectedDateTime!,
                 )
               else
                 MegaphonePostListLiked(
-                  selectedDateTime: selectedDateTime,
+                  selectedDateTime: selectedDateTime!,
                 )
             ],
           ),

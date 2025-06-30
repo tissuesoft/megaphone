@@ -31,17 +31,17 @@ class _PostScreenState extends State<PostScreen> {
       final response = await supabase
           .from('Board')
           .select('''
-      board_id,
-      title,
-      likes,
-      megaphone_time,
-      created_at,     
-      Users (
-        user_id,
-        user_nickname,
-        used_megaphone
-      )
-    ''')
+            board_id,
+            title,
+            likes,
+            megaphone_time,
+            created_at,     
+            Users (
+              user_id,
+              user_nickname,
+              used_megaphone
+            )
+          ''')
           .eq('board_id', widget.boardId)
           .maybeSingle();
 

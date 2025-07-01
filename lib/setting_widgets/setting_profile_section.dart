@@ -34,16 +34,7 @@ class SettingProfileSection extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
             child: Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(9999),
-                  child: Image.asset(
-                    'assets/kimyongsik.jpg',
-                    width: 64,
-                    height: 64,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 0),
                 const Text(
                   '김고확',
                   style: TextStyle(

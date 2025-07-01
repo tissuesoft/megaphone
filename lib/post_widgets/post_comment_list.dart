@@ -34,7 +34,6 @@ class _PostCommentListState extends State<PostCommentList> {
             Users (
               user_id,
               user_nickname,
-              user_image,
               used_megaphone
             )
           ''')
@@ -97,8 +96,6 @@ class _PostCommentListState extends State<PostCommentList> {
           PostCommentItem(
             commentId: comment['comment_id'],
             username: comment['Users']['user_nickname'],
-            profileImage:
-            comment['Users']['user_image'] ?? 'assets/default.png',
             content: comment['comment'],
             timeAgo: _formatTimeAgo(comment['created_at']),
             likeCount: comment['likes'] ?? 0,
@@ -114,7 +111,6 @@ class _PostCommentListState extends State<PostCommentList> {
 class PostCommentItem extends StatefulWidget {
   final int commentId;
   final String username;
-  final String profileImage;
   final String content;
   final String timeAgo;
   final int likeCount;
@@ -124,7 +120,6 @@ class PostCommentItem extends StatefulWidget {
     super.key,
     required this.commentId,
     required this.username,
-    required this.profileImage,
     required this.content,
     required this.timeAgo,
     required this.likeCount,
@@ -184,13 +179,6 @@ class _PostCommentItemState extends State<PostCommentItem> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              GestureDetector(
-                onTap: _goToProfile,
-                child: CircleAvatar(
-                  radius: 16,
-                  backgroundImage: AssetImage(widget.profileImage),
-                ),
-              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -295,6 +283,7 @@ class _PostCommentItemState extends State<PostCommentItem> {
                   ],
                 ),
               ),
+              const SizedBox(width: 12), // 여백 추가
             ],
           ),
         ),

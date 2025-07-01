@@ -21,7 +21,7 @@ class _IdInputSectionState extends State<IdInputSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '아이디',
+          '닉네임',
           style: TextStyle(
             fontFamily: 'Poppins',
             fontWeight: FontWeight.w500,
@@ -38,7 +38,7 @@ class _IdInputSectionState extends State<IdInputSection> {
               decoration: InputDecoration(
                 counterText: '', // 하단 글자 수 숨기기
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-                hintText: '아이디를 입력하세요',
+                hintText: '닉네임을 입력하세요',
                 hintStyle: const TextStyle(
                   color: Color(0xFF9CA3AF),
                   fontFamily: 'Poppins',

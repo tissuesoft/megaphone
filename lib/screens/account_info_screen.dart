@@ -15,9 +15,7 @@ class AccountInfoScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           children: const [
-            SizedBox(height: 24),
-            ProfileImageSection(),
-            SizedBox(height: 48),
+            SizedBox(height: 12),
             IdInputSection(),
           ],
         ),

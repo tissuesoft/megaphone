@@ -23,7 +23,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: Column(
         children: [
           const ProfileHeader(),               // 상단바 (타이틀 + 설정 아이콘)
-          const MyProfileSummarySection(),     // 프로필 이미지 + 닉네임
           const MyProfileStatSection(),        // 고확 당첨 / 작성 글 / 받은 공감
           MyProfileTabSection(                 // 고확 기록 / 게시글 탭
             selectedIndex: selectedTabIndex,

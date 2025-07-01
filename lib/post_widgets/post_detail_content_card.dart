@@ -124,10 +124,6 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const CircleAvatar(
-                  radius: 20,
-                  backgroundImage: AssetImage('assets/profile_drinking.png'),
-                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -191,14 +187,22 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
         // 본문 텍스트
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontFamily: 'Roboto',
-              fontSize: 18,
-              height: 1.6,
-              color: Color(0xFF111827),
-            ),
+          child: Row(
+            children: [
+              const SizedBox(width: 12), // 여백 추가
+              Expanded( // 텍스트가 줄바꿈 되도록
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: 18,
+                    height: 1.6,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12), // 여백 추가
+            ],
           ),
         ),
 

@@ -19,10 +19,10 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const OtherPeopleProfileHeader(),
+      appBar: const OtherPeopleProfileHeader(userId: '홍길동'),
       body: Column(
         children: [
-          const OtherPeopleProfileSummarySection(),
+          // const OtherPeopleProfileSummarySection(),
           const OtherPeopleProfileStatSection(),
           OtherPeopleProfileTabSection(
             selectedIndex: _selectedIndex,

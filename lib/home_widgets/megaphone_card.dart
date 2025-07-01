@@ -67,7 +67,6 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
             megaphone_time,
             Users (
               user_nickname,
-              user_image,
               used_megaphone
             )
           ''')
@@ -122,9 +121,7 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
 
     final user = megaphonePost['Users'] ?? {};
     final nickname = user['user_nickname'] ?? '알 수 없음';
-    final profileImage = user['user_image'] ?? '';
     final usedMegaphone = int.tryParse(user['used_megaphone']?.toString() ?? '0') ?? 0;
-    final isNetworkImage = profileImage.startsWith('http');
 
     return GestureDetector(
       onTap: () {
@@ -220,6 +217,7 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
 
             // 하단 정보
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // 좋아요 버튼
                 // 좋아요 버튼 (수정됨)
@@ -253,8 +251,8 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
                         isLiked
                             ? 'assets/crown_icon_megaphone_card+1.png'
                             : 'assets/crown_icon_megaphone_card.png',
-                        width: 16,
-                        height: 16,
+                        width: 24,
+                        height: 24,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -280,25 +278,18 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
                   },
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 12,
-                        backgroundImage: isNetworkImage
-                            ? NetworkImage(profileImage)
-                            : const AssetImage('assets/default_profile.png') as ImageProvider,
-                      ),
-                      const SizedBox(width: 6),
                       Text(
                         nickname,
                         style: const TextStyle(
                           fontFamily: 'Montserrat',
-                          fontSize: 14,
+                          fontSize: 15,
                           color: Colors.white,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 16),
 
                 // 고확 배지
                 if (usedMegaphone > 0)

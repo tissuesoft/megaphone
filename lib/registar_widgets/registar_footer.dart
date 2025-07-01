@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../screens/bottom_nav_screen.dart'; // ✅ 경로 맞춰주세요
+import '../screens/bottom_nav_screen.dart';
 
 class RegistarFooter extends StatelessWidget {
   final bool isNicknameAvailable;
@@ -8,44 +8,49 @@ class RegistarFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final width = MediaQuery.of(context).size.width;
 
     final bool isActive = isNicknameAvailable;
     final Color buttonColor =
     isActive ? const Color(0xFFFF6B35) : const Color(0xFFD1D5DB);
 
     return Container(
-      width: screenWidth,
-      height: 133,
+      width: width,
+      height: width * 0.35, // 반응형 높이 (예: 384px * 0.35 ≈ 134)
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(24, 25, 24, 16),
+      padding: EdgeInsets.fromLTRB(
+        width * 0.06, // 좌
+        width * 0.06, // 상
+        width * 0.06, // 우
+        width * 0.04, // 하
+      ),
       child: Column(
         children: [
-          // 시작하기 버튼
           GestureDetector(
             onTap: isActive
                 ? () {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const BottomNavScreen(initialIndex: 0),
+                  builder: (context) =>
+                  const BottomNavScreen(initialIndex: 0),
                 ),
               );
             }
-                : null, // 비활성 상태일 땐 아무 것도 하지 않음
+                : null,
             child: Container(
               width: double.infinity,
-              height: 56,
+              height: width * 0.145, // 예: 56px
               decoration: BoxDecoration(
                 color: buttonColor,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(width * 0.03), // 예: 12px
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
                   '시작하기',
                   style: TextStyle(
                     fontFamily: 'Noto Sans KR',
-                    fontSize: 16,
+                    fontSize: width * 0.042, // 예: 16px
                     fontWeight: FontWeight.w400,
                     color: Colors.white,
                   ),
@@ -53,13 +58,13 @@ class RegistarFooter extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          const Text(
+          SizedBox(height: width * 0.03), // 예: 12px
+          Text(
             '나중에 프로필에서 변경할 수 있습니다',
             style: TextStyle(
               fontFamily: 'Noto Sans KR',
-              fontSize: 12,
-              color: Color(0xFF9CA3AF),
+              fontSize: width * 0.031, // 예: 12px
+              color: const Color(0xFF9CA3AF),
             ),
             textAlign: TextAlign.center,
           ),

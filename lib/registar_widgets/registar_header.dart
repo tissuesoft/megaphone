@@ -47,7 +47,7 @@ class RegistarHeader extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '닉네임과 프로필 사진을 설정해주세요',
+            '닉네임을 설정해주세요',
             style: TextStyle(
               fontFamily: 'Noto Sans KR',
               fontSize: screenWidth * 0.035 > 14 ? 14 : screenWidth * 0.035,

@@ -155,66 +155,6 @@ class _RegistarBodyState extends State<RegistarBody> {
                   ),
               ],
             ),
-            const SizedBox(height: 32),
-
-            // 프로필 이미지 업로드
-            Column(
-              children: [
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: profileSize,
-                      height: profileSize,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF3F4F6),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 4),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 15,
-                            offset: Offset(0, 10),
-                          )
-                        ],
-                      ),
-                      child: Icon(Icons.camera_alt_outlined,
-                          size: iconSize, color: const Color(0xFF9CA3AF)),
-                    ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: profileBadgeSize,
-                        height: profileBadgeSize,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFF6B35),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 15,
-                              offset: Offset(0, 10),
-                            )
-                          ],
-                        ),
-                        child: Icon(Icons.add,
-                            size: profileBadgeSize * 0.55, color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '프로필 사진 추가',
-                  style: TextStyle(
-                    fontFamily: 'Noto Sans KR',
-                    fontSize: width * 0.035,
-                    color: const Color(0xFF6B7280),
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),

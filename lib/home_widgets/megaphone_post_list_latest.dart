@@ -1,3 +1,4 @@
+// ✂️ imports 동일
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,7 +14,8 @@ class MegaphonePostListLatest extends StatefulWidget {
   });
 
   @override
-  State<MegaphonePostListLatest> createState() => MegaphonePostListLatestState();
+  State<MegaphonePostListLatest> createState() =>
+      MegaphonePostListLatestState();
 }
 
 class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
@@ -46,11 +48,10 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
             Comment(count),
             Users (
               user_nickname,
-              user_image,
               used_megaphone
             )
           ''')
-          .order('created_at', ascending: false)
+          .order('board_id', ascending: false)
           .limit(50);
 
       setState(() {
@@ -94,12 +95,14 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
       }
     }).toList();
 
-    // ✅ 최신순 정렬
-    filteredPosts.sort((a, b) {
-      final aCreated = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(2000);
-      final bCreated = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(2000);
-      return bCreated.compareTo(aCreated); // 최신순
-    });
+    // filteredPosts.sort((a, b) {
+    //   final aCreated = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(2000);
+    //   final bCreated = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(2000);
+    //   return bCreated.compareTo(aCreated); // 최신순
+    // });
+    print('필터' );
+    print(filteredPosts);
+    print('필터' );
 
     if (filteredPosts.isEmpty) {
       return const Padding(
@@ -112,190 +115,199 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
       children: filteredPosts.map((item) {
         final user = item['Users'] ?? {};
         final nickname = user['user_nickname'] ?? '알 수 없음';
-        final profileImage = user['user_image'] ?? '';
-        final isNetworkImage = profileImage.startsWith('http');
-        final usedMegaphone = int.tryParse(user['used_megaphone']?.toString() ?? '0') ?? 0;
+        final usedMegaphone =
+            int.tryParse(user['used_megaphone']?.toString() ?? '0') ?? 0;
 
-        final createdAt = DateTime.tryParse(item['created_at'] ?? '') ?? DateTime.now();
-        final postDateTime = DateTime.tryParse(item['megaphone_time'] ?? '') ?? DateTime.now();
+        final createdAt =
+            DateTime.tryParse(item['created_at'] ?? '') ?? DateTime.now();
+        final postDateTime =
+            DateTime.tryParse(item['megaphone_time'] ?? '') ?? DateTime.now();
         final postTime = DateFormat('HH:mm').format(postDateTime.toLocal());
         final timeAgo = _getTimeAgo(createdAt);
         final remaining = _getRemainingTime(postDateTime);
         final boardId = item['board_id'];
-        final commentCount = item['Comment'] is List && item['Comment'].isNotEmpty
+        final commentCount = item['Comment'] is List &&
+            item['Comment'].isNotEmpty
             ? item['Comment'][0]['count'] ?? 0
             : 0;
         int likeCount = likeCounts[boardId] ?? 0;
         bool isLiked = likedStates[boardId] ?? false;
 
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xFF9CA3AF)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 2,
-                offset: const Offset(0, 1),
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PostScreen(boardId: boardId),
               ),
-            ],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const OtherProfileScreen()),
-                      );
-                    },
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundImage: isNetworkImage
-                              ? NetworkImage(profileImage)
-                              : AssetImage(profileImage) as ImageProvider,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          nickname,
-                          style: const TextStyle(
-                            fontFamily: 'Montserrat',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        if (usedMegaphone > 0) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFED7AA),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Row(
-                              children: [
-                                Image.asset('assets/megaphoneCountIcon.png', width: 12, height: 12),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '$usedMegaphone회',
-                                  style: const TextStyle(
-                                    fontFamily: 'Roboto',
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w400,
-                                    color: Color(0xFF9A3412),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Text(
-                    postTime,
-                    style: const TextStyle(fontFamily: 'Montserrat', fontSize: 12),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                timeAgo,
-                style: const TextStyle(fontFamily: 'Montserrat', fontSize: 12),
-              ),
-              const SizedBox(height: 12),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => PostScreen(boardId: item['board_id']),
-                    ),
-                  );
-                },
-                child: Text(
-                  item['title'] ?? '내용 없음',
-                  style: const TextStyle(fontFamily: 'Montserrat', fontSize: 16),
+            );
+          },
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: const Color(0xFF9CA3AF)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 2,
+                  offset: const Offset(0, 1),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () async {
-                          setState(() {
-                            isLiked = !isLiked;
-                            likeCount += isLiked ? 1 : -1;
-                            likeCounts[boardId] = likeCount;
-                            likedStates[boardId] = isLiked;
-                          });
-
-                          // ✅ Supabase에 좋아요 수 업데이트
-                          final supabase = Supabase.instance.client;
-                          try {
-                            await supabase
-                                .from('Board')
-                                .update({'likes': likeCount})
-                                .eq('board_id', boardId);
-                          } catch (e) {
-                            print('❌ 좋아요 업데이트 실패: $e');
-                          }
-                        },
-                        child: Row(
-                          children: [
-                            Image.asset(
-                              isLiked
-                                  ? 'assets/crown_icon_likes+1.png'
-                                  : 'assets/crown_icon_likes.png',
-                              width: 16,
-                              height: 16,
+              ],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 유저 정보
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const OtherProfileScreen()),
+                        );
+                      },
+                      child: Row(
+                        children: [
+                          Text(
+                            nickname,
+                            style: const TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '$likeCount',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFFFF6B35),
-                                fontFamily: 'Montserrat',
-                                fontWeight: FontWeight.w500,
+                          ),
+                          if (usedMegaphone > 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFED7AA),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                children: [
+                                  Image.asset(
+                                    'assets/megaphoneCountIcon.png',
+                                    width: 12,
+                                    height: 12,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '$usedMegaphone회',
+                                    style: const TextStyle(
+                                      fontFamily: 'Roboto',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w400,
+                                      color: Color(0xFF9A3412),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 16),
-                      Image.asset('assets/comment_icon.png', width: 16, height: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$commentCount',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFFFF6B35),
-                          fontFamily: 'Montserrat',
-                          fontWeight: FontWeight.w500,
+                    ),
+                    Text(
+                      postTime,
+                      style: const TextStyle(
+                          fontFamily: 'Montserrat', fontSize: 12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  timeAgo,
+                  style: const TextStyle(
+                      fontFamily: 'Montserrat', fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  item['title'] ?? '내용 없음',
+                  style: const TextStyle(
+                      fontFamily: 'Montserrat', fontSize: 16),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () async {
+                            final newLikedState = !(likedStates[boardId] ?? false);
+                            final newLikeCount =
+                                (likeCounts[boardId] ?? 0) + (newLikedState ? 1 : -1);
+
+                            setState(() {
+                              likedStates[boardId] = newLikedState;
+                              likeCounts[boardId] = newLikeCount;
+                            });
+
+                            final supabase = Supabase.instance.client;
+                            try {
+                              await supabase
+                                  .from('Board')
+                                  .update({'likes': newLikeCount})
+                                  .eq('board_id', boardId);
+                            } catch (e) {
+                              print('❌ 좋아요 업데이트 실패: $e');
+                            }
+                          },
+                          child: Row(
+                            children: [
+                              Image.asset(
+                                isLiked
+                                    ? 'assets/crown_icon_likes+1.png'
+                                    : 'assets/crown_icon_likes.png',
+                                width: 16,
+                                height: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$likeCount',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFFFF6B35),
+                                  fontFamily: 'Montserrat',
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    remaining,
-                    style: const TextStyle(fontFamily: 'Montserrat', fontSize: 12),
-                  ),
-                ],
-              ),
-            ],
+                        const SizedBox(width: 16),
+                        Image.asset('assets/comment_icon.png', width: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$commentCount',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFFFF6B35),
+                            fontFamily: 'Montserrat',
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      remaining,
+                      style: const TextStyle(
+                          fontFamily: 'Montserrat', fontSize: 12),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       }).toList(),

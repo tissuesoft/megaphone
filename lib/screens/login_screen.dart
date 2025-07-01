@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'bottom_nav_screen.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import 'registar_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -37,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen>
       // 4. 홈 화면으로 이동
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const BottomNavScreen()),
+        MaterialPageRoute(builder: (context) => const RegistarScreen()),
       );
     } catch (error) {
       print('카카오 로그인 실패: $error');

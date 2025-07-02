@@ -1,22 +1,90 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
 class CommentInputBar extends StatefulWidget {
-  const CommentInputBar({super.key});
+      final int boardId;
+      final VoidCallback onSubmit;
 
-  @override
-  State<CommentInputBar> createState() => _CommentInputBarState();
-}
+      const CommentInputBar({
+        super.key,
+        required this.boardId,
+        required this.onSubmit,
+      });
 
-class _CommentInputBarState extends State<CommentInputBar> {
-  final TextEditingController _controller = TextEditingController();
+      @override
+      State<CommentInputBar> createState() => _CommentInputBarState();
+    }
 
-  void _sendComment() {
+    class _CommentInputBarState extends State<CommentInputBar> {
+    final TextEditingController _controller = TextEditingController();
+    final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
+    Future<bool> isKakaoLoggedIn() async {
+    final accessToken = await _secureStorage.read(key: 'kakao_access_token');
+    final refreshToken = await _secureStorage.read(key: 'kakao_refresh_token');
+    return accessToken != null && refreshToken != null;
+  }
+
+  Future<void> _sendComment() async {
     final text = _controller.text.trim();
-    if (text.isNotEmpty) {
+    if (text.isEmpty) return;
+
+    final supabase = Supabase.instance.client;
+
+    if (await isKakaoLoggedIn() == false) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('전송된 댓글: $text')),
+        const SnackBar(content: Text('카카오톡으로 로그인해주세요.')),
       );
+      return;
+    }
+
+    String? kakaoId;
+    try {
+      final kakaoUser = await UserApi.instance.me();
+      kakaoId = kakaoUser.id.toString();
+    } catch (e) {
+      print('❌ 카카오 사용자 정보 조회 실패: $e');
+    }
+    if (kakaoId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('카카오 사용자 정보를 가져올 수 없습니다.')),
+      );
+      return;
+    }
+
+    // Supabase Users 테이블에서 user_id 조회
+    final userData = await supabase
+        .from('Users')
+        .select('user_id')
+        .eq('kakao_id', kakaoId)
+        .maybeSingle();
+
+    if (userData == null || userData['user_id'] == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('사용자 정보가 없습니다.')),
+      );
+      return;
+    }
+
+    final userId = userData['user_id'];
+
+    try {
+      await supabase.from('Comment').insert({
+        'comment': text,
+        'board_id': widget.boardId,
+        'user_id': userId,
+        'likes': 0,
+      });
+
       _controller.clear();
+      widget.onSubmit(); // 댓글 새로고침
+    } catch (e) {
+      print('❌ 댓글 저장 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('댓글 저장 중 오류가 발생했습니다.')),
+      );
     }
   }
 
@@ -31,7 +99,6 @@ class _CommentInputBarState extends State<CommentInputBar> {
         color: Colors.white,
         child: Row(
           children: [
-            // 입력창 (반응형)
             Expanded(
               child: Container(
                 height: 38,
@@ -62,8 +129,6 @@ class _CommentInputBarState extends State<CommentInputBar> {
               ),
             ),
             const SizedBox(width: 12),
-
-            // 전송 버튼
             SizedBox(
               height: 38,
               child: ElevatedButton(

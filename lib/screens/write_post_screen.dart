@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:intl/intl.dart';
+
 import '../write_post_widgets/write_post_header.dart';
 import '../write_post_widgets/time_slot_selector.dart';
 import '../write_post_widgets/post_content_input.dart';
@@ -43,25 +45,20 @@ class _WritePostScreenState extends State<WritePostScreen> {
 
   Future<void> submitPost() async {
     final supabase = Supabase.instance.client;
-    // final session = supabase.auth.currentSession;
-    // if (session == null) {
-    //   print('❌ Supabase에 로그인된 세션 없음');
-    //   return;
-    // }
     final storage = FlutterSecureStorage();
     final accessToken = await storage.read(key: 'kakao_access_token');
     final refreshToken = await storage.read(key: 'kakao_refresh_token');
-    print(accessToken);
-    print(refreshToken);
 
-    if (isKakaoLoggedIn() == false) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('카카오톡으로 로그인해주세요.')));
+    print('🔐 accessToken: $accessToken');
+    print('🔐 refreshToken: $refreshToken');
+
+    if (await isKakaoLoggedIn() == false) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('카카오톡으로 로그인해주세요.')),
+      );
       return;
     }
 
-    // ✅ 카카오 사용자 ID 가져오기
     String? kakaoId;
     try {
       final kakaoUser = await UserApi.instance.me();
@@ -75,16 +72,16 @@ class _WritePostScreenState extends State<WritePostScreen> {
     print('🔑 kakaoId: $kakaoId');
 
     if (kakaoId == null || selectedTime == null || content.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('모든 항목을 입력해주세요.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('모든 항목을 입력해주세요.')),
+      );
       return;
     }
 
     setState(() => isLoading = true);
 
     try {
-      // ✅ Supabase Users 테이블에서 user_id 조회
+      // Users 테이블에서 user_id 조회
       final userData = await supabase
           .from('Users')
           .select('user_id')
@@ -97,25 +94,30 @@ class _WritePostScreenState extends State<WritePostScreen> {
 
       final userId = userData['user_id'];
 
-      // ✅ Board 테이블에 게시글 저장
+      // 🔧 날짜를 'yyyy-MM-dd HH:00:00' 형식으로 포맷
+      final formattedTime =
+      DateFormat('yyyy-MM-dd HH:00:00').format(selectedTime!);
+
+      // Board 테이블에 게시글 저장
       await supabase.from('Board').insert({
         'user_id': userId,
-        'megaphone_time': selectedTime!.hour, // ERD상 int형
+        'megaphone_time': formattedTime, // ✅ 원하는 형식으로 저장
         'title': content.trim(),
+        'megaphone_win': false,
         'likes': 0,
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('게시글이 작성되었습니다.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('게시글이 작성되었습니다.')),
+        );
         Navigator.pop(context);
       }
     } catch (e) {
       print('❌ 게시글 저장 실패: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('게시글 저장에 실패했습니다.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('게시글 저장에 실패했습니다.')),
+      );
     } finally {
       if (mounted) setState(() => isLoading = false);
     }

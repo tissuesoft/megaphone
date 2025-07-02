@@ -55,8 +55,6 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
     final targetHour = DateTime(now.year, now.month, now.day, now.hour);
     final formatted = DateFormat("yyyy-MM-dd HH:00:00").format(targetHour);
 
-    print('🕐 정확히 일치하는 시간 문자열: $formatted');
-
     try {
       final response = await supabase
           .from('Board')
@@ -74,8 +72,6 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
           .order('likes', ascending: false)
           .limit(1)
           .maybeSingle();
-
-      print('📦 Supabase 응답: $response');
 
       setState(() {
         megaphonePost = response;

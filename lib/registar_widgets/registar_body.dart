@@ -26,12 +26,25 @@ class _RegistarBodyState extends State<RegistarBody> {
     });
   }
 
+  bool _isValidNickname(String input) {
+    final regex = RegExp(r'^[a-zA-Z0-9_]{4,20}$');
+    return regex.hasMatch(input);
+  }
+
   void _checkNicknameDuplicate() {
     final input = _nicknameController.text.trim();
 
     if (input.isEmpty) {
       setState(() {
         _nicknameStatus = '닉네임을 입력해주세요.';
+      });
+      widget.onNicknameAvailableChanged(false);
+      return;
+    }
+
+    if (!_isValidNickname(input)) {
+      setState(() {
+        _nicknameStatus = '닉네임은 영문, 숫자, _(언더스코어)만 사용하며 4~20자여야 합니다.';
       });
       widget.onNicknameAvailableChanged(false);
       return;
@@ -113,7 +126,8 @@ class _RegistarBodyState extends State<RegistarBody> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       ),
                     ),
                     Positioned(

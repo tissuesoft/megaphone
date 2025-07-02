@@ -17,7 +17,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
-    RankingScreen(),
+    // RankingScreen(),
     ProfileScreen(),
   ];
 
@@ -49,10 +49,10 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
             icon: Icon(Icons.home),
             label: '홈',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.emoji_events),
-            label: '랭킹',
-          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.emoji_events),
+          //   label: '랭킹',
+          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: '프로필',

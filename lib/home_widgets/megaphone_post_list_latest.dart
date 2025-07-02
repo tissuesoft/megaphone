@@ -100,9 +100,6 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
     //   final bCreated = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(2000);
     //   return bCreated.compareTo(aCreated); // 최신순
     // });
-    print('필터' );
-    print(filteredPosts);
-    print('필터' );
 
     if (filteredPosts.isEmpty) {
       return const Padding(

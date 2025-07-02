@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import '../screens/bottom_nav_screen.dart';
 
 class RegistarFooter extends StatelessWidget {
   final bool isNicknameAvailable;
+  final VoidCallback onSubmit;
 
-  const RegistarFooter({super.key, required this.isNicknameAvailable});
+  const RegistarFooter({
+    super.key,
+    required this.isNicknameAvailable,
+    required this.onSubmit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +20,7 @@ class RegistarFooter extends StatelessWidget {
 
     return Container(
       width: width,
-      height: width * 0.35, // 반응형 높이 (예: 384px * 0.35 ≈ 134)
+      height: width * 0.35, // 예: 384px * 0.35 ≈ 134
       color: Colors.white,
       padding: EdgeInsets.fromLTRB(
         width * 0.06, // 좌
@@ -27,17 +31,7 @@ class RegistarFooter extends StatelessWidget {
       child: Column(
         children: [
           GestureDetector(
-            onTap: isActive
-                ? () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                  const BottomNavScreen(initialIndex: 0),
-                ),
-              );
-            }
-                : null,
+            onTap: isActive ? onSubmit : null,
             child: Container(
               width: double.infinity,
               height: width * 0.145, // 예: 56px

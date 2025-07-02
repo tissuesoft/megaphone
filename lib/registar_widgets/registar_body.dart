@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegistarBody extends StatefulWidget {
   final void Function(bool) onNicknameAvailableChanged;
+  final void Function(String) onNicknameChanged;
 
-  const RegistarBody({super.key, required this.onNicknameAvailableChanged});
+  const RegistarBody({
+    super.key,
+    required this.onNicknameAvailableChanged,
+    required this.onNicknameChanged,
+  });
 
   @override
   State<RegistarBody> createState() => _RegistarBodyState();
@@ -12,9 +18,8 @@ class RegistarBody extends StatefulWidget {
 class _RegistarBodyState extends State<RegistarBody> {
   final TextEditingController _nicknameController = TextEditingController();
   int _nicknameLength = 0;
-
   String _nicknameStatus = '';
-  final List<String> existingNicknames = ['admin', 'user1', '고확짱'];
+  final supabase = Supabase.instance.client;
 
   @override
   void initState() {
@@ -23,15 +28,17 @@ class _RegistarBodyState extends State<RegistarBody> {
       setState(() {
         _nicknameLength = _nicknameController.text.length;
       });
+
+      widget.onNicknameChanged(_nicknameController.text.trim());
     });
   }
 
   bool _isValidNickname(String input) {
-    final regex = RegExp(r'^[a-zA-Z0-9_]{4,20}$');
+    final regex = RegExp(r'^[a-zA-Z0-9ㄱ-ㅎ가-힣_]{2,20}$'); // ✅ 한글 포함
     return regex.hasMatch(input);
   }
 
-  void _checkNicknameDuplicate() {
+  Future<void> _checkNicknameDuplicate() async {
     final input = _nicknameController.text.trim();
 
     if (input.isEmpty) {
@@ -44,19 +51,35 @@ class _RegistarBodyState extends State<RegistarBody> {
 
     if (!_isValidNickname(input)) {
       setState(() {
-        _nicknameStatus = '닉네임은 영문, 숫자, _(언더스코어)만 사용하며 4~20자여야 합니다.';
+        _nicknameStatus = '닉네임은 한글, 영문, 숫자, _(언더스코어)만 사용하며 2~20자여야 합니다.';
       });
       widget.onNicknameAvailableChanged(false);
       return;
     }
 
-    final isDuplicated = existingNicknames.contains(input);
-    setState(() {
-      _nicknameStatus =
-      isDuplicated ? '이미 사용 중인 닉네임입니다.' : '사용 가능한 닉네임입니다!';
-    });
+    try {
+      final res = await supabase
+          .from('Users')
+          .select('user_nickname')
+          .eq('user_nickname', input)
+          .maybeSingle();
 
-    widget.onNicknameAvailableChanged(!isDuplicated);
+      final isDuplicated = res != null;
+
+      setState(() {
+        _nicknameStatus = isDuplicated
+            ? '이미 사용 중인 닉네임입니다.'
+            : '사용 가능한 닉네임입니다!';
+      });
+
+      widget.onNicknameAvailableChanged(!isDuplicated);
+    } catch (e) {
+      print('❌ 닉네임 중복 확인 오류: $e');
+      setState(() {
+        _nicknameStatus = '서버 오류가 발생했습니다.';
+      });
+      widget.onNicknameAvailableChanged(false);
+    }
   }
 
   @override
@@ -69,10 +92,6 @@ class _RegistarBodyState extends State<RegistarBody> {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
-    final double iconSize = width * 0.085;
-    final double profileSize = width * 0.25;
-    final double profileBadgeSize = profileSize * 0.35;
 
     return Container(
       width: double.infinity,
@@ -126,8 +145,10 @@ class _RegistarBodyState extends State<RegistarBody> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
                         ),
-                        contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
                       ),
                     ),
                     Positioned(
@@ -150,7 +171,7 @@ class _RegistarBodyState extends State<RegistarBody> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '영문, 숫자, 특수문자(_) 조합 4-20자',
+                  '한글, 영문, 숫자, _(언더스코어) 조합 2~20자',
                   style: TextStyle(
                     fontSize: width * 0.032,
                     color: const Color(0xFF9CA3AF),

@@ -54,25 +54,6 @@ class _PostContentInputState extends State<PostContentInput> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: const [
-              CircleAvatar(
-                radius: 20,
-                backgroundImage: AssetImage('assets/kimyongsik.jpg'),
-              ),
-              SizedBox(width: 12),
-              Text(
-                '닉네임',
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF111827),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
           Container(
             height: 128,
             width: double.infinity,

@@ -3,18 +3,19 @@ import 'package:flutter/material.dart';
 class WriteButton extends StatelessWidget {
   final VoidCallback onPressed;
   final bool isEnabled;
+  final bool isLoading;
 
   const WriteButton({
     super.key,
     required this.onPressed,
     required this.isEnabled,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-
-    final Color backgroundColor =
+    final backgroundColor =
     isEnabled ? const Color(0xFFFF6B35) : const Color(0xFFD9D9D9);
 
     return Container(
@@ -41,7 +42,16 @@ class WriteButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text('게시글 작성하기'),
+          child: isLoading
+              ? const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2,
+            ),
+          )
+              : const Text('게시글 작성하기'),
         ),
       ),
     );

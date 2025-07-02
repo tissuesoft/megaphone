@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class TimeSlotSelector extends StatefulWidget {
-  const TimeSlotSelector({super.key});
+  final Function(DateTime) onTimeSelected;
+
+  const TimeSlotSelector({super.key, required this.onTimeSelected});
 
   @override
   State<TimeSlotSelector> createState() => _TimeSlotSelectorState();
@@ -21,6 +23,11 @@ class _TimeSlotSelectorState extends State<TimeSlotSelector> {
       6,
           (i) => DateTime(now.year, now.month, now.day, currentHour + i),
     );
+
+    // 초기 선택값도 상위로 전달
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onTimeSelected(availableHours[selectedIndex]);
+    });
   }
 
   @override
@@ -62,7 +69,6 @@ class _TimeSlotSelectorState extends State<TimeSlotSelector> {
             ),
           ),
           const SizedBox(height: 16),
-
           GridView.count(
             crossAxisCount: 3,
             mainAxisSpacing: 8,
@@ -79,6 +85,7 @@ class _TimeSlotSelectorState extends State<TimeSlotSelector> {
                   setState(() {
                     selectedIndex = index;
                   });
+                  widget.onTimeSelected(availableHours[index]);
                 },
                 child: Container(
                   decoration: BoxDecoration(
@@ -100,9 +107,7 @@ class _TimeSlotSelectorState extends State<TimeSlotSelector> {
               );
             }),
           ),
-
           const SizedBox(height: 16),
-
           Container(
             height: 42,
             width: double.infinity,
@@ -127,7 +132,7 @@ class _TimeSlotSelectorState extends State<TimeSlotSelector> {
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );

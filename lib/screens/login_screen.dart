@@ -38,8 +38,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         token = await UserApi.instance.loginWithKakaoAccount();
       }
 
-      final user = await UserApi.instance.me();
-      final kakaoId = user.id.toString();
+      final kakaoUser = await UserApi.instance.me();
+      final kakaoId = kakaoUser.id.toString();
+      print('🟡 카카오 로그인 완료. 유저 ID: $kakaoId');
+
       final supabase = Supabase.instance.client;
 
       final existingUser = await supabase
@@ -47,9 +49,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           .select()
           .eq('kakao_id', kakaoId)
           .maybeSingle();
+      print('🟢 Supabase에서 조회한 유저: $existingUser');
 
       if (existingUser != null) {
-        // 이미 가입된 유저 → 바로 로그인 (홈으로 이동)
+        // ✅ 이미 가입된 유저 → 바로 홈으로 이동
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -57,13 +60,18 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           ),
         );
       } else {
-        // 회원가입 안된 유저 → 닉네임 설정 화면으로 이동 (RegistarScreen)
+        // ❗️회원가입 안된 유저 → 닉네임 설정 화면으로 이동
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (_) => RegistarScreen(kakaoId: kakaoId),
           ),
         );
+      }
+      if (existingUser != null) {
+        print('✅ 기존 유저 → 홈 이동');
+      } else {
+      print('🆕 신규 유저 → RegistarScreen 이동');
       }
     } catch (e) {
       print('❌ 카카오 로그인 실패: $e');
@@ -124,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 ),
               ),
 
-              // ✅ 텍스트
+              // ✅ 타이틀 텍스트
               Positioned(
                 top: textTop,
                 left: 0,

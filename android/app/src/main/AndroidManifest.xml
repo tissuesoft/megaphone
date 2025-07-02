@@ -25,7 +25,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Kakao Login Custom Tabs Activity -->
+        <!-- ✅ Kakao 로그인용 Custom Tabs Activity -->
         <activity
             android:name="com.kakao.sdk.auth.AuthCodeCustomTabsActivity"
             android:exported="true">
@@ -36,6 +36,20 @@
                 <data
                     android:scheme="${kakaoScheme}"
                     android:host="oauth" />
+            </intent-filter>
+        </activity>
+
+        <!-- ✅ Supabase OAuth 리디렉션 처리용 -->
+        <activity
+            android:name="com.supabase.flutter.ui.DeepLinkingActivity"
+            android:exported="true">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="io.supabase.flutter"
+                    android:host="login-callback" />
             </intent-filter>
         </activity>
 

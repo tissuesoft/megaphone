@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../write_post_widgets/write_post_header.dart';
 import '../write_post_widgets/time_slot_selector.dart';
 import '../write_post_widgets/post_content_input.dart';
@@ -13,6 +13,13 @@ class WritePostScreen extends StatefulWidget {
 
   @override
   State<WritePostScreen> createState() => _WritePostScreenState();
+}
+
+Future<bool> isKakaoLoggedIn() async {
+  final storage = FlutterSecureStorage();
+  final accessToken = await storage.read(key: 'kakao_access_token');
+  final refreshToken = await storage.read(key: 'kakao_refresh_token');
+  return accessToken != null && refreshToken != null;
 }
 
 class _WritePostScreenState extends State<WritePostScreen> {
@@ -36,9 +43,21 @@ class _WritePostScreenState extends State<WritePostScreen> {
 
   Future<void> submitPost() async {
     final supabase = Supabase.instance.client;
-    final session = supabase.auth.currentSession;
-    if (session == null) {
-      print('❌ Supabase에 로그인된 세션 없음');
+    // final session = supabase.auth.currentSession;
+    // if (session == null) {
+    //   print('❌ Supabase에 로그인된 세션 없음');
+    //   return;
+    // }
+    final storage = FlutterSecureStorage();
+    final accessToken = await storage.read(key: 'kakao_access_token');
+    final refreshToken = await storage.read(key: 'kakao_refresh_token');
+    print(accessToken);
+    print(refreshToken);
+
+    if (isKakaoLoggedIn() == false) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('카카오톡으로 로그인해주세요.')));
       return;
     }
 
@@ -56,9 +75,9 @@ class _WritePostScreenState extends State<WritePostScreen> {
     print('🔑 kakaoId: $kakaoId');
 
     if (kakaoId == null || selectedTime == null || content.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('모든 항목을 입력해주세요.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('모든 항목을 입력해주세요.')));
       return;
     }
 
@@ -87,16 +106,16 @@ class _WritePostScreenState extends State<WritePostScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('게시글이 작성되었습니다.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('게시글이 작성되었습니다.')));
         Navigator.pop(context);
       }
     } catch (e) {
       print('❌ 게시글 저장 실패: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('게시글 저장에 실패했습니다.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('게시글 저장에 실패했습니다.')));
     } finally {
       if (mounted) setState(() => isLoading = false);
     }

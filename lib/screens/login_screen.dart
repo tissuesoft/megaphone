@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'registar_screen.dart';
+import 'bottom_nav_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -9,40 +11,9 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
-    with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _floatAnimation;
-
-  Future<void> kakaoLogin() async {
-    try {
-      OAuthToken token;
-
-      // 1. 카카오톡이 설치되어 있으면 카카오톡으로 로그인
-      if (await isKakaoTalkInstalled()) {
-        token = await UserApi.instance.loginWithKakaoTalk();
-        print('카카오톡으로 로그인 성공');
-      } else {
-        // 2. 없으면 카카오 계정으로 로그인 (웹뷰 방식)
-        token = await UserApi.instance.loginWithKakaoAccount();
-        print('카카오 계정으로 로그인 성공');
-      }
-
-      // 3. 로그인 성공 후 사용자 정보 조회
-      User user = await UserApi.instance.me();
-      print('사용자 ID: ${user.id}');
-      print('닉네임: ${user.kakaoAccount?.profile?.nickname}');
-      print('이메일: ${user.kakaoAccount?.email}');
-
-      // 4. 홈 화면으로 이동
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const RegistarScreen()),
-      );
-    } catch (error) {
-      print('카카오 로그인 실패: $error');
-    }
-  }
 
   @override
   void initState() {
@@ -52,10 +23,51 @@ class _LoginScreenState extends State<LoginScreen>
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
-    _floatAnimation = Tween<double>(
-      begin: 0,
-      end: -15,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _floatAnimation = Tween<double>(begin: 0, end: -15).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  Future<void> kakaoLogin() async {
+    try {
+      OAuthToken token;
+
+      if (await isKakaoTalkInstalled()) {
+        token = await UserApi.instance.loginWithKakaoTalk();
+      } else {
+        token = await UserApi.instance.loginWithKakaoAccount();
+      }
+
+      final user = await UserApi.instance.me();
+      final kakaoId = user.id.toString();
+      final supabase = Supabase.instance.client;
+
+      final existingUser = await supabase
+          .from('Users')
+          .select()
+          .eq('kakao_id', kakaoId)
+          .maybeSingle();
+
+      if (existingUser != null) {
+        // 이미 가입된 유저 → 바로 로그인 (홈으로 이동)
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const BottomNavScreen(initialIndex: 0),
+          ),
+        );
+      } else {
+        // 회원가입 안된 유저 → 닉네임 설정 화면으로 이동 (RegistarScreen)
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RegistarScreen(kakaoId: kakaoId),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ 카카오 로그인 실패: $e');
+    }
   }
 
   @override

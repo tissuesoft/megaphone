@@ -143,28 +143,30 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
                               color: Color(0xFF111827),
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFED7AA),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Image.asset('assets/megaphoneCountIcon.png', width: 12, height: 12),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '$usedMegaphone회',
-                                  style: const TextStyle(
-                                    fontFamily: 'Roboto',
-                                    fontSize: 12,
-                                    color: Color(0xFF9A3412),
+                          if (usedMegaphone > 0) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFED7AA),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Image.asset('assets/megaphoneCountIcon.png', width: 12, height: 12),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '$usedMegaphone회',
+                                    style: const TextStyle(
+                                      fontFamily: 'Roboto',
+                                      fontSize: 12,
+                                      color: Color(0xFF9A3412),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
+                          ]
                         ],
                       ),
                       const SizedBox(height: 6),

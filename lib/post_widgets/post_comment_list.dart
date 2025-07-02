@@ -8,10 +8,10 @@ class PostCommentList extends StatefulWidget {
   const PostCommentList({super.key, required this.boardId});
 
   @override
-  State<PostCommentList> createState() => _PostCommentListState();
+  State<PostCommentList> createState() => PostCommentListState(); // 클래스명 공개
 }
 
-class _PostCommentListState extends State<PostCommentList> {
+class PostCommentListState extends State<PostCommentList> {
   List<dynamic> comments = [];
   bool isLoading = true;
 
@@ -21,6 +21,7 @@ class _PostCommentListState extends State<PostCommentList> {
     fetchComments();
   }
 
+  // 댓글 불러오기 (외부에서 호출 가능)
   Future<void> fetchComments() async {
     final supabase = Supabase.instance.client;
     try {
@@ -38,7 +39,7 @@ class _PostCommentListState extends State<PostCommentList> {
             )
           ''')
           .eq('board_id', widget.boardId)
-          .order('comment_id', ascending: false); // ✅ 댓글 ID 기준 정렬
+          .order('comment_id', ascending: false);
 
       setState(() {
         comments = response;
@@ -99,8 +100,8 @@ class _PostCommentListState extends State<PostCommentList> {
             content: comment['comment'],
             timeAgo: _formatTimeAgo(comment['created_at']),
             likeCount: comment['likes'] ?? 0,
-            badge: comment['Users']['used_megaphone'] > 0
-                ? '${comment['Users']['used_megaphone']}회'
+            badge: (comment['Users']?['used_megaphone'] ?? 0) > 0
+                ? '${comment['Users']?['used_megaphone']}회'
                 : null,
           ),
       ],
@@ -283,7 +284,7 @@ class _PostCommentItemState extends State<PostCommentItem> {
                   ],
                 ),
               ),
-              const SizedBox(width: 12), // 여백 추가
+              const SizedBox(width: 12),
             ],
           ),
         ),

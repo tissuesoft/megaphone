@@ -1,4 +1,3 @@
-// post_screen.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../post_widgets/post_header.dart';
@@ -19,9 +18,12 @@ class _PostScreenState extends State<PostScreen> {
   bool isLoading = true;
   dynamic postData;
 
+  late final GlobalKey<PostCommentListState> commentListKey;
+
   @override
   void initState() {
     super.initState();
+    commentListKey = GlobalKey<PostCommentListState>();
     fetchPostData();
   }
 
@@ -35,7 +37,7 @@ class _PostScreenState extends State<PostScreen> {
             title,
             likes,
             megaphone_time,
-            created_at,     
+            created_at,
             Users (
               user_id,
               user_nickname,
@@ -57,25 +59,51 @@ class _PostScreenState extends State<PostScreen> {
     }
   }
 
+  void refreshComments() {
+    commentListKey.currentState?.fetchComments();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true, // 핵심! 키보드 올라올 때 자동 밀어줌
       backgroundColor: Colors.white,
       appBar: const PostHeader(),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : postData == null
           ? const Center(child: Text('게시글을 찾을 수 없습니다.'))
-          : SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            PostDetailContentCard(postData: postData), // ✅ 통째로 넘김
-            PostCommentList(boardId: widget.boardId),
-          ],
-        ),
+          : Column(
+        children: [
+          // 댓글 영역
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 80), // 댓글창 높이만큼
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  PostDetailContentCard(postData: postData),
+                  PostCommentList(
+                    key: commentListKey,
+                    boardId: widget.boardId,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // 댓글 입력창 (항상 아래 고정)
+          const Divider(height: 1, color: Color(0xFFE5E7EB)),
+          Material(
+            elevation: 8,
+            color: Colors.white,
+            child: CommentInputBar(
+              boardId: widget.boardId,
+              onSubmit: refreshComments,
+            ),
+          ),
+        ],
       ),
-      bottomNavigationBar: const CommentInputBar(),
     );
   }
 }

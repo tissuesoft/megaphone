@@ -22,11 +22,12 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<MegaphonePostListLatestState> latestKey =
   GlobalKey<MegaphonePostListLatestState>();
 
+  Offset _dragStart = Offset.zero;
+  Offset _dragUpdate = Offset.zero;
+
   @override
   void initState() {
     super.initState();
-
-    // 앱 실행 시 현재 시각 기준 +1시간을 기본값으로 설정
     final now = DateTime.now().toUtc().add(const Duration(hours: 9));
     final nextHour = DateTime(now.year, now.month, now.day, now.hour + 1);
     selectedDateTime = nextHour;
@@ -44,9 +45,20 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _handleSwipe() {
+    final dx = _dragUpdate.dx - _dragStart.dx;
+
+    if (dx < -50 && selectedTab == 'latest') {
+      // 오른쪽에서 왼쪽 → 공감순으로 변경
+      onTabSelected('liked');
+    } else if (dx > 50 && selectedTab == 'liked') {
+      // 왼쪽에서 오른쪽 → 최신순으로 변경
+      onTabSelected('latest');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // selectedDateTime이 아직 null이면 로딩 인디케이터 표시
     if (selectedDateTime == null) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -72,10 +84,11 @@ class _HomeScreenState extends State<HomeScreen> {
             if (selectedTab == 'latest') {
               await latestKey.currentState?.fetchPosts();
             }
-            setState(() {}); // TimeFilterBar rebuild 용도
+            setState(() {});
           },
           child: ListView(
             padding: EdgeInsets.zero,
+            physics: const AlwaysScrollableScrollPhysics(),
             children: [
               const HomeHeader(),
               const MegaphoneCard(),
@@ -87,15 +100,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 selectedTab: selectedTab,
                 onTabChanged: onTabSelected,
               ),
-              if (selectedTab == 'latest')
-                MegaphonePostListLatest(
+              // 👉 여기만 스와이프 가능하게 GestureDetector로 감쌈
+              GestureDetector(
+                onHorizontalDragStart: (details) {
+                  _dragStart = details.globalPosition;
+                },
+                onHorizontalDragUpdate: (details) {
+                  _dragUpdate = details.globalPosition;
+                },
+                onHorizontalDragEnd: (details) {
+                  _handleSwipe();
+                },
+                child: selectedTab == 'latest'
+                    ? MegaphonePostListLatest(
                   key: latestKey,
                   selectedDateTime: selectedDateTime!,
                 )
-              else
-                MegaphonePostListLiked(
+                    : MegaphonePostListLiked(
                   selectedDateTime: selectedDateTime!,
-                )
+                ),
+              ),
             ],
           ),
         ),

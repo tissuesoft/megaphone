@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'registar_screen.dart';
 import 'bottom_nav_screen.dart';
 
@@ -11,7 +12,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _floatAnimation;
 
@@ -23,9 +25,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
-    _floatAnimation = Tween<double>(begin: 0, end: -15).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _floatAnimation = Tween<double>(
+      begin: 0,
+      end: -15,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   Future<void> kakaoLogin() async {
@@ -37,6 +40,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       } else {
         token = await UserApi.instance.loginWithKakaoAccount();
       }
+
+      // ✅ 토큰 저장
+      final storage = FlutterSecureStorage();
+      await storage.write(key: 'kakao_access_token', value: token.accessToken);
+      await storage.write(key: 'kakao_refresh_token', value: token.refreshToken);
 
       final kakaoUser = await UserApi.instance.me();
       final kakaoId = kakaoUser.id.toString();
@@ -51,6 +59,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           .maybeSingle();
       print('🟢 Supabase에서 조회한 유저: $existingUser');
 
+      print('accessToken: ${token.accessToken}');
+      print('refreshToken: ${token.refreshToken}');
+
       if (existingUser != null) {
         // ✅ 이미 가입된 유저 → 바로 홈으로 이동
         Navigator.pushReplacement(
@@ -63,15 +74,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         // ❗️회원가입 안된 유저 → 닉네임 설정 화면으로 이동
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => RegistarScreen(kakaoId: kakaoId),
-          ),
+          MaterialPageRoute(builder: (_) => RegistarScreen(kakaoId: kakaoId)),
         );
       }
       if (existingUser != null) {
         print('✅ 기존 유저 → 홈 이동');
       } else {
-      print('🆕 신규 유저 → RegistarScreen 이동');
+        print('🆕 신규 유저 → RegistarScreen 이동');
       }
     } catch (e) {
       print('❌ 카카오 로그인 실패: $e');

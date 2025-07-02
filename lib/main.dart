@@ -25,6 +25,8 @@ void main() async {
     nativeAppKey: dotenv.env['NATIVE_APP_KEY']!,
     javaScriptAppKey: dotenv.env['JAVASCRIPT_APP_KEY']!,
   );
+  final keyHash = await KakaoSdk.origin;
+  print('🔑 친구 폰 Key Hash: $keyHash');
 
   runApp(const MegaPhoneApp());
 }

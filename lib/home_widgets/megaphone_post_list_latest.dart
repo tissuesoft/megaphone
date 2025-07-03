@@ -1,12 +1,10 @@
-// ✂️ imports 동일
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:megaphone/screens/otherpeople_profile_screen.dart';
 import 'package:megaphone/screens/post_screen.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
-
 
 class MegaphonePostListLatest extends StatefulWidget {
   final DateTime selectedDateTime;
@@ -14,8 +12,7 @@ class MegaphonePostListLatest extends StatefulWidget {
   const MegaphonePostListLatest({super.key, required this.selectedDateTime});
 
   @override
-  State<MegaphonePostListLatest> createState() =>
-      MegaphonePostListLatestState();
+  State<MegaphonePostListLatest> createState() => MegaphonePostListLatestState();
 }
 
 class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
@@ -34,34 +31,19 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
     fetchPosts();
   }
 
-  Future<String?> getUserNickname() async {
+  Future<String?> getKakaoId() async {
     try {
       final kakaoUser = await UserApi.instance.me();
-      final kakaoId = kakaoUser.id.toString();
-
-      final supabase = Supabase.instance.client;
-      final userData = await supabase
-          .from('Users')
-          .select('user_nickname')
-          .eq('kakao_id', kakaoId)
-          .maybeSingle();
-
-      if (userData != null && userData['user_nickname'] != null) {
-        return userData['user_nickname'] as String;
-      } else {
-        print('❌ Supabase에서 user_nickname 없음');
-        return null;
-      }
+      return kakaoUser.id.toString();
     } catch (e) {
-      print('❌ user_nickname 조회 실패: $e');
+      print('❌ kakao_id 조회 실패: $e');
       return null;
     }
   }
 
-
   Future<void> fetchPosts() async {
     final supabase = Supabase.instance.client;
-    final nickname = await getUserNickname(); // ✅ 추가
+    final kakaoId = await getKakaoId();
 
     try {
       final response = await supabase
@@ -91,7 +73,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
               : [];
 
           likeCounts[boardId] = likes.length;
-          likedStates[boardId] = nickname != null && likes.contains(nickname); // ✅ 상태 저장
+          likedStates[boardId] = kakaoId != null && likes.contains(kakaoId);
         }
         isLoading = false;
       });
@@ -125,12 +107,6 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
       }
     }).toList();
 
-    // filteredPosts.sort((a, b) {
-    //   final aCreated = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(2000);
-    //   final bCreated = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(2000);
-    //   return bCreated.compareTo(aCreated); // 최신순
-    // });
-
     if (filteredPosts.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(32),
@@ -141,7 +117,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
     return Column(
       children: filteredPosts.map((item) {
         final user = item['Users'] ?? {};
-        final userId = item['Users']?['user_id']; // ✅ user_id 추출
+        final userId = user['user_id'];
         final nickname = user['user_nickname'] ?? '알 수 없음';
         final usedMegaphone =
             int.tryParse(user['used_megaphone']?.toString() ?? '0') ?? 0;
@@ -155,10 +131,10 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
         final remaining = _getRemainingTime(postDateTime);
         final boardId = item['board_id'];
         final commentCount =
-            item['Comment'] is List && item['Comment'].isNotEmpty
+        item['Comment'] is List && item['Comment'].isNotEmpty
             ? item['Comment'][0]['count'] ?? 0
             : 0;
-        List<String> likesCount = item['likes'] is List
+        List<String> likes = item['likes'] is List
             ? List<String>.from(item['likes'])
             : [];
         bool isLiked = likedStates[boardId] ?? false;
@@ -200,7 +176,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                           MaterialPageRoute(
                             builder: (_) => OtherProfileScreen(
                               userId: userId.toString(),
-                            ), // ✅ 여기!
+                            ),
                           ),
                         );
                       },
@@ -283,9 +259,9 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () async {
-                            final nickname = await getUserNickname();
-                            if (nickname == null) {
-                              print('❌ 사용자 닉네임 없음');
+                            final kakaoId = await getKakaoId();
+                            if (kakaoId == null) {
+                              print('❌ 사용자 kakao_id 없음');
                               return;
                             }
 
@@ -295,12 +271,12 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                                 ? List<String>.from(item['likes'])
                                 : [];
 
-                            final alreadyLiked = likedUserList.contains(nickname);
+                            final alreadyLiked = likedUserList.contains(kakaoId);
 
                             if (alreadyLiked) {
-                              likedUserList.remove(nickname);
+                              likedUserList.remove(kakaoId);
                             } else {
-                              likedUserList.add(nickname);
+                              likedUserList.add(kakaoId);
                             }
 
                             try {
@@ -313,7 +289,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                               return;
                             }
 
-                            if (!mounted) return; // 💡 이거 없으면 setState() 메모리 누수 경고
+                            if (!mounted) return;
 
                             setState(() {
                               likedStates[boardId] = !alreadyLiked;
@@ -324,7 +300,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                           child: Row(
                             children: [
                               Image.asset(
-                                likedStates[boardId] == true
+                                isLiked
                                     ? 'assets/crown_icon_likes+1.png'
                                     : 'assets/crown_icon_likes.png',
                                 width: 16,

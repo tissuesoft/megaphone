@@ -1,4 +1,3 @@
-// ✂️ imports 동일
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -27,28 +26,19 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
     fetchPosts();
   }
 
-  Future<String?> getUserNickname() async {
+  Future<String?> getKakaoId() async {
     try {
       final kakaoUser = await UserApi.instance.me();
-      final kakaoId = kakaoUser.id.toString();
-
-      final supabase = Supabase.instance.client;
-      final userData = await supabase
-          .from('Users')
-          .select('user_nickname')
-          .eq('kakao_id', kakaoId)
-          .maybeSingle();
-
-      return userData?['user_nickname'];
+      return kakaoUser.id.toString();
     } catch (e) {
-      print('❌ user_nickname 조회 실패: $e');
+      print('❌ kakao_id 조회 실패: $e');
       return null;
     }
   }
 
   Future<void> fetchPosts() async {
     final supabase = Supabase.instance.client;
-    final nickname = await getUserNickname();
+    final kakaoId = await getKakaoId();
 
     try {
       final response = await supabase
@@ -76,9 +66,8 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
           final likes = item['likes'] is List
               ? List<String>.from(item['likes'])
               : [];
-
           likeCounts[boardId] = likes.length;
-          likedStates[boardId] = nickname != null && likes.contains(nickname);
+          likedStates[boardId] = kakaoId != null && likes.contains(kakaoId);
         }
         isLoading = false;
       });
@@ -177,16 +166,16 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
                       onTap: () {
                         if (userId == null || userId.toString().isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('유저 정보를 불러올 수 없습니다.')),
+                            const SnackBar(
+                                content: Text('유저 정보를 불러올 수 없습니다.')),
                           );
                           return;
                         }
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => OtherProfileScreen(
-                              userId: userId.toString(),
-                            ),
+                            builder: (_) =>
+                                OtherProfileScreen(userId: userId.toString()),
                           ),
                         );
                       },
@@ -211,8 +200,7 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
                               ),
                               child: Row(
                                 children: [
-                                  Image.asset(
-                                      'assets/megaphoneCountIcon.png',
+                                  Image.asset('assets/megaphoneCountIcon.png',
                                       width: 12),
                                   const SizedBox(width: 4),
                                   Text(
@@ -258,8 +246,8 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () async {
-                            final nickname = await getUserNickname();
-                            if (nickname == null) return;
+                            final kakaoId = await getKakaoId();
+                            if (kakaoId == null) return;
 
                             final supabase = Supabase.instance.client;
 
@@ -268,12 +256,12 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
                                 : [];
 
                             final alreadyLiked =
-                            likedUserList.contains(nickname);
+                            likedUserList.contains(kakaoId);
 
                             if (alreadyLiked) {
-                              likedUserList.remove(nickname);
+                              likedUserList.remove(kakaoId);
                             } else {
-                              likedUserList.add(nickname);
+                              likedUserList.add(kakaoId);
                             }
 
                             try {
@@ -296,7 +284,7 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
                           child: Row(
                             children: [
                               Image.asset(
-                                likedStates[boardId] == true
+                                isLiked
                                     ? 'assets/crown_icon_likes+1.png'
                                     : 'assets/crown_icon_likes.png',
                                 width: 16,

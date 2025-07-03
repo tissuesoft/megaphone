@@ -44,10 +44,7 @@ class _LoginScreenState extends State<LoginScreen>
       // ✅ 토큰 저장
       final storage = FlutterSecureStorage();
       await storage.write(key: 'kakao_access_token', value: token.accessToken);
-      await storage.write(
-        key: 'kakao_refresh_token',
-        value: token.refreshToken,
-      );
+      await storage.write(key: 'kakao_refresh_token', value: token.refreshToken);
 
       final kakaoUser = await UserApi.instance.me();
       final kakaoId = kakaoUser.id.toString();
@@ -86,12 +83,6 @@ class _LoginScreenState extends State<LoginScreen>
         print('🆕 신규 유저 → RegistarScreen 이동');
       }
     } catch (e) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const BottomNavScreen(initialIndex: 0),
-        ),
-      );
       print('❌ 카카오 로그인 실패: $e');
     }
   }

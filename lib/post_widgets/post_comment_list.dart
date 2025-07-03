@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:megaphone/screens/otherpeople_profile_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -8,7 +9,7 @@ class PostCommentList extends StatefulWidget {
   const PostCommentList({super.key, required this.boardId});
 
   @override
-  State<PostCommentList> createState() => PostCommentListState(); // 클래스명 공개
+  State<PostCommentList> createState() => PostCommentListState();
 }
 
 class PostCommentListState extends State<PostCommentList> {
@@ -21,7 +22,6 @@ class PostCommentListState extends State<PostCommentList> {
     fetchComments();
   }
 
-  // 댓글 불러오기 (외부에서 호출 가능)
   Future<void> fetchComments() async {
     final supabase = Supabase.instance.client;
     try {
@@ -96,11 +96,13 @@ class PostCommentListState extends State<PostCommentList> {
         for (var comment in comments)
           PostCommentItem(
             commentId: comment['comment_id'],
-            userId: comment['Users']['user_id'], // ✅ 추가
+            userId: comment['Users']['user_id'],
             username: comment['Users']['user_nickname'],
             content: comment['comment'],
             timeAgo: _formatTimeAgo(comment['created_at']),
-            likeCount: comment['likes'] ?? 0,
+            likes: comment['likes'] is List
+                ? List<String>.from(comment['likes'])
+                : [],
             badge: (comment['Users']?['used_megaphone'] ?? 0) > 0
                 ? '${comment['Users']?['used_megaphone']}회'
                 : null,
@@ -112,11 +114,11 @@ class PostCommentListState extends State<PostCommentList> {
 
 class PostCommentItem extends StatefulWidget {
   final int commentId;
-  final int userId; // ✅ 추가
+  final int userId;
   final String username;
   final String content;
   final String timeAgo;
-  final int likeCount;
+  final List<dynamic> likes;
   final String? badge;
 
   const PostCommentItem({
@@ -126,7 +128,7 @@ class PostCommentItem extends StatefulWidget {
     required this.username,
     required this.content,
     required this.timeAgo,
-    required this.likeCount,
+    required this.likes,
     this.badge,
   });
 
@@ -135,50 +137,95 @@ class PostCommentItem extends StatefulWidget {
 }
 
 class _PostCommentItemState extends State<PostCommentItem> {
-  late bool isLiked;
-  int? likeCount;
+  bool isLiked = false;
+  List<String> likesList = [];
 
   @override
   void initState() {
     super.initState();
-    isLiked = false;
-    likeCount = widget.likeCount;
+    likesList = widget.likes is List ? List<String>.from(widget.likes) : [];
+    initLikeStatus();
+  }
+
+  Future<String?> getUserNickname() async {
+    try {
+      final kakaoUser = await UserApi.instance.me();
+      final kakaoId = kakaoUser.id.toString();
+
+      final supabase = Supabase.instance.client;
+      final userData = await supabase
+          .from('Users')
+          .select('user_nickname')
+          .eq('kakao_id', kakaoId)
+          .maybeSingle();
+
+      return userData?['user_nickname'];
+    } catch (e) {
+      print('❌ user_nickname 가져오기 실패: $e');
+      return null;
+    }
+  }
+
+  Future<void> initLikeStatus() async {
+    final nickname = await getUserNickname();
+    if (nickname == null) return;
+
+    setState(() {
+      isLiked = likesList.contains(nickname);
+    });
   }
 
   void _toggleLike() async {
-    final supabase = Supabase.instance.client;
+    final nickname = await getUserNickname();
+    if (nickname == null) return;
 
-    setState(() {
-      isLiked = !isLiked;
-      likeCount = (likeCount ?? 0) + (isLiked ? 1 : -1);
-    });
+    final supabase = Supabase.instance.client;
+    final alreadyLiked = likesList.contains(nickname);
+
+    if (alreadyLiked) {
+      likesList.remove(nickname);
+    } else {
+      likesList.add(nickname);
+    }
 
     try {
       await supabase
           .from('Comment')
-          .update({'likes': likeCount})
+          .update({'likes': likesList})
           .eq('comment_id', widget.commentId);
-    } catch (e) {
-      print('❌ 좋아요 업데이트 실패: $e');
+
+      if (!mounted) return;
       setState(() {
-        isLiked = !isLiked;
-        likeCount = (likeCount ?? 0) + (isLiked ? 1 : -1);
+        isLiked = !alreadyLiked;
+      });
+    } catch (e) {
+      print('❌ 댓글 좋아요 업데이트 실패: $e');
+      // 롤백
+      setState(() {
+        if (alreadyLiked) {
+          likesList.add(nickname);
+        } else {
+          likesList.remove(nickname);
+        }
+        isLiked = alreadyLiked;
       });
     }
   }
 
   void _goToProfile() {
-
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => OtherProfileScreen(userId: widget.userId.toString()),
+        builder: (context) =>
+            OtherProfileScreen(userId: widget.userId.toString()),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final likeCount = likesList.length;
+
     return Column(
       children: [
         Padding(
@@ -274,7 +321,7 @@ class _PostCommentItemState extends State<PostCommentItem> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '${likeCount ?? 0}',
+                                  '$likeCount',
                                   style: const TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 12,

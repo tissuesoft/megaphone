@@ -36,29 +36,24 @@ class _OtherPeopleProfileStatSectionState extends State<OtherPeopleProfileStatSe
       final usedCountRaw = userRes['used_megaphone'];
       final usedCount = usedCountRaw is int ? usedCountRaw : 0;
 
-      // ✅ 2. 게시글 리스트
-      final postRes = await supabase
+      // ✅ 2. 해당 유저의 전체 게시글 조회 (likes 포함)
+      final boardRes = await supabase
           .from('Board')
-          .select('board_id')
+          .select('likes') // 꼭 likes 포함
           .eq('user_id', widget.userId);
 
-      final boardIds = postRes.map((e) => e['board_id'] as int).toList();
-
-      // ✅ 3. 해당 게시글의 총 좋아요 수
       int likeSum = 0;
-      if (boardIds.isNotEmpty) {
-        final likesRes = await supabase
-            .from('likes')
-            .select('board_id')
-            .inFilter('board_id', boardIds);
-
-        likeSum = likesRes.length;
+      for (var post in boardRes) {
+        final likes = post['likes'];
+        if (likes is List) {
+          likeSum += likes.length;
+        }
       }
 
       if (!mounted) return;
       setState(() {
         usedMegaphone = usedCount;
-        postCount = postRes.length;
+        postCount = boardRes.length;
         totalLikesReceived = likeSum;
         isLoading = false;
       });

@@ -5,12 +5,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:megaphone/screens/otherpeople_profile_screen.dart';
 import 'package:megaphone/screens/post_screen.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
 class MegaphoneCard extends StatefulWidget {
   const MegaphoneCard({super.key});
 
   @override
-  State<MegaphoneCard> createState() => MegaphoneCardState ();
+  State<MegaphoneCard> createState() => MegaphoneCardState();
 }
 
 class MegaphoneCardState extends State<MegaphoneCard> {
@@ -48,6 +49,25 @@ class MegaphoneCardState extends State<MegaphoneCard> {
     super.dispose();
   }
 
+  Future<String?> getUserNickname() async {
+    try {
+      final kakaoUser = await UserApi.instance.me();
+      final kakaoId = kakaoUser.id.toString();
+
+      final supabase = Supabase.instance.client;
+      final userData = await supabase
+          .from('Users')
+          .select('user_nickname')
+          .eq('kakao_id', kakaoId)
+          .maybeSingle();
+
+      return userData?['user_nickname'];
+    } catch (e) {
+      print('❌ user_nickname 가져오기 실패: $e');
+      return null;
+    }
+  }
+
   Future<void> fetchTopPostForCurrentHour() async {
     final supabase = Supabase.instance.client;
 
@@ -74,25 +94,22 @@ class MegaphoneCardState extends State<MegaphoneCard> {
           ''')
           .filter('megaphone_time', 'eq', formatted)
           .order('likes', ascending: false)
-          .order('created_at', ascending: true) // 가장 먼저 작성한 글 우선
+          .order('created_at', ascending: true)
           .limit(1)
           .maybeSingle();
 
       if (response != null) {
         final boardId = response['board_id'];
-        final userId = response['user_id'];
+        final userRes = response['Users'];
+        final userId = userRes?['user_id'];
 
-        // ✅ 이미 당첨된 글이면 +1 처리하지 않음
+        // ✅ 당첨 처리
         if (response['megaphone_win'] != true) {
-          // 게시글을 megaphone_win = true로 설정
           await supabase
               .from('Board')
               .update({'megaphone_win': true})
               .eq('board_id', boardId);
 
-          // Users 테이블의 used_megaphone +1
-          final userRes = response['Users'];
-          final userId = userRes?['Users']?['user_id']; // ✅ user_id 추출
           final usedCountRaw = userRes?['used_megaphone'];
           final usedCount = usedCountRaw is int ? usedCountRaw : 0;
           final newUsed = usedCount + 1;
@@ -103,9 +120,15 @@ class MegaphoneCardState extends State<MegaphoneCard> {
               .eq('user_id', userId);
         }
 
+        final nickname = await getUserNickname();
+        final likes = response['likes'] is List
+            ? List<String>.from(response['likes'])
+            : [];
+
         if (!mounted) return;
         setState(() {
           megaphonePost = response;
+          isLiked = nickname != null && likes.contains(nickname);
           isLoading = false;
         });
       } else {
@@ -256,23 +279,34 @@ class MegaphoneCardState extends State<MegaphoneCard> {
               children: [
                 GestureDetector(
                   onTap: () async {
-                    setState(() {
-                      isLiked = !isLiked;
-                    });
+                    final nickname = await getUserNickname();
+                    if (nickname == null) return;
 
                     final supabase = Supabase.instance.client;
                     final boardId = megaphonePost['board_id'];
-                    final currentLikes = megaphonePost['likes'] ?? 0;
-                    final newLikeCount = isLiked ? currentLikes + 1 : currentLikes - 1;
+
+                    List<String> likes = megaphonePost['likes'] is List
+                        ? List<String>.from(megaphonePost['likes'])
+                        : [];
+
+                    final alreadyLiked = likes.contains(nickname);
+
+                    if (alreadyLiked) {
+                      likes.remove(nickname);
+                    } else {
+                      likes.add(nickname);
+                    }
 
                     try {
                       await supabase
                           .from('Board')
-                          .update({'likes': newLikeCount})
+                          .update({'likes': likes})
                           .eq('board_id', boardId);
 
+                      if (!mounted) return;
                       setState(() {
-                        megaphonePost['likes'] = newLikeCount;
+                        isLiked = !alreadyLiked;
+                        megaphonePost['likes'] = likes;
                       });
                     } catch (e) {
                       print('❌ 좋아요 업데이트 실패: $e');
@@ -289,7 +323,10 @@ class MegaphoneCardState extends State<MegaphoneCard> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        megaphonePost['likes'].toString(),
+                        (megaphonePost['likes'] is List
+                            ? megaphonePost['likes'].length
+                            : 0)
+                            .toString(),
                         style: const TextStyle(
                           fontFamily: 'Montserrat',
                           fontSize: 14,
@@ -300,18 +337,15 @@ class MegaphoneCardState extends State<MegaphoneCard> {
                   ),
                 ),
                 const SizedBox(width: 16),
-
                 GestureDetector(
                   onTap: () {
                     final userId = megaphonePost['user_id'];
-
                     if (userId == null || userId.toString().isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('유저 정보를 불러올 수 없습니다.')),
                       );
                       return;
                     }
-
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -329,7 +363,6 @@ class MegaphoneCardState extends State<MegaphoneCard> {
                   ),
                 ),
                 const SizedBox(width: 16),
-
                 if (usedMegaphone > 0)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -339,11 +372,7 @@ class MegaphoneCardState extends State<MegaphoneCard> {
                     ),
                     child: Row(
                       children: [
-                        Image.asset(
-                          'assets/megaphoneCountIcon.png',
-                          width: 12,
-                          height: 12,
-                        ),
+                        Image.asset('assets/megaphoneCountIcon.png', width: 12),
                         const SizedBox(width: 4),
                         Text(
                           '$usedMegaphone회',

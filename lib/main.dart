@@ -30,6 +30,7 @@ void main() async {
 
   runApp(const MegaPhoneApp());
 }
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
 class MegaPhoneApp extends StatelessWidget {
   const MegaPhoneApp({super.key});
@@ -41,6 +42,7 @@ class MegaPhoneApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(fontFamily: 'Montserrat', primarySwatch: Colors.orange),
       home: const LoginScreen(), // ✅ 앱 시작 시 로그인 화면 먼저 보여줌
+      navigatorObservers: [routeObserver], // ✅ 여기!
     );
   }
 }

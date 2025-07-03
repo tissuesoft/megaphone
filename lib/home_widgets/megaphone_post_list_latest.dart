@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:megaphone/screens/otherpeople_profile_screen.dart';
 import 'package:megaphone/screens/post_screen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+
 
 class MegaphonePostListLatest extends StatefulWidget {
   final DateTime selectedDateTime;
@@ -32,13 +34,35 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
     fetchPosts();
   }
 
-  Future<String?> getKakaoId() async {
-    final storage = FlutterSecureStorage();
-    return await storage.read(key: 'kakao_access_token') ?? null;
+  Future<String?> getUserNickname() async {
+    try {
+      final kakaoUser = await UserApi.instance.me();
+      final kakaoId = kakaoUser.id.toString();
+
+      final supabase = Supabase.instance.client;
+      final userData = await supabase
+          .from('Users')
+          .select('user_nickname')
+          .eq('kakao_id', kakaoId)
+          .maybeSingle();
+
+      if (userData != null && userData['user_nickname'] != null) {
+        return userData['user_nickname'] as String;
+      } else {
+        print('❌ Supabase에서 user_nickname 없음');
+        return null;
+      }
+    } catch (e) {
+      print('❌ user_nickname 조회 실패: $e');
+      return null;
+    }
   }
+
 
   Future<void> fetchPosts() async {
     final supabase = Supabase.instance.client;
+    final nickname = await getUserNickname(); // ✅ 추가
+
     try {
       final response = await supabase
           .from('Board')
@@ -62,20 +86,18 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
         posts = response;
         for (var item in posts) {
           final boardId = item['board_id'];
-          // likes가 배열(jsonb)이므로 length로 카운트
-          likeCounts[boardId] = (item['likes'] is List)
-              ? item['likes'].length
-              : 0;
-          // 좋아요 상태는 기본값 false (실제 유저별 상태는 UI에서 처리)
-          likedStates[boardId] = false;
+          final likes = item['likes'] is List
+              ? List<String>.from(item['likes'])
+              : [];
+
+          likeCounts[boardId] = likes.length;
+          likedStates[boardId] = nickname != null && likes.contains(nickname); // ✅ 상태 저장
         }
         isLoading = false;
       });
     } catch (e) {
       print('❌ 데이터 불러오기 오류: $e');
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
     }
   }
 
@@ -261,44 +283,25 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () async {
-                            final kakaoId = await getKakaoId();
-                            if (kakaoId == null) return;
+                            final nickname = await getUserNickname();
+                            if (nickname == null) {
+                              print('❌ 사용자 닉네임 없음');
+                              return;
+                            }
 
-                            // 기존 likes(jsonb) 배열 가져오기
                             final supabase = Supabase.instance.client;
-                            Map<String, dynamic> boardRow = {};
-                            try {
-                              final res = await supabase
-                                  .from('Board')
-                                  .select('likes')
-                                  .eq('board_id', boardId)
-                                  .maybeSingle();
-                              boardRow = res ?? {};
-                            } catch (e) {
-                              print('❌ likes 조회 실패: $e');
-                            }
 
-                            List<dynamic> likedUserList = [];
-                            if (boardRow['likes'] is List) {
-                              likedUserList = List<String>.from(
-                                boardRow['likes'],
-                              );
-                            }
+                            List<String> likedUserList = item['likes'] is List
+                                ? List<String>.from(item['likes'])
+                                : [];
 
-                            final alreadyLiked = likedUserList.contains(
-                              kakaoId,
-                            );
+                            final alreadyLiked = likedUserList.contains(nickname);
 
                             if (alreadyLiked) {
-                              likedUserList.remove(kakaoId);
+                              likedUserList.remove(nickname);
                             } else {
-                              likedUserList.add(kakaoId);
+                              likedUserList.add(nickname);
                             }
-
-                            setState(() {
-                              likedStates[boardId] = !alreadyLiked;
-                              likeCounts[boardId] = likedUserList.length;
-                            });
 
                             try {
                               await supabase
@@ -306,13 +309,22 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                                   .update({'likes': likedUserList})
                                   .eq('board_id', boardId);
                             } catch (e) {
-                              print('❌ 좋아요 업데이트 실패: $e');
+                              print('❌ Supabase 오류: $e');
+                              return;
                             }
+
+                            if (!mounted) return; // 💡 이거 없으면 setState() 메모리 누수 경고
+
+                            setState(() {
+                              likedStates[boardId] = !alreadyLiked;
+                              likeCounts[boardId] = likedUserList.length;
+                              item['likes'] = likedUserList;
+                            });
                           },
                           child: Row(
                             children: [
                               Image.asset(
-                                isLiked
+                                likedStates[boardId] == true
                                     ? 'assets/crown_icon_likes+1.png'
                                     : 'assets/crown_icon_likes.png',
                                 width: 16,
@@ -320,7 +332,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '${likesCount.length}', // ← 좋아요 수를 likesCount.length로 표시
+                                '${likeCounts[boardId] ?? 0}',
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: Color(0xFFFF6B35),

@@ -27,11 +27,9 @@ class _MyProfileStatSectionState extends State<MyProfileStatSection> {
     final storage = FlutterSecureStorage();
 
     try {
-      // ✅ 1. 카카오 로그인 사용자 정보 가져오기
       final kakaoUser = await UserApi.instance.me();
       final kakaoId = kakaoUser.id.toString();
 
-      // ✅ 2. Supabase Users 테이블에서 user_id 조회
       final userData = await supabase
           .from('Users')
           .select('user_id')
@@ -44,7 +42,7 @@ class _MyProfileStatSectionState extends State<MyProfileStatSection> {
 
       final userId = userData['user_id'];
 
-      // ✅ 3. 고확 당첨 수 (Users 테이블의 used_megaphone)
+      // ✅ 고확 당첨 수
       final userRes = await supabase
           .from('Users')
           .select('used_megaphone')
@@ -54,30 +52,24 @@ class _MyProfileStatSectionState extends State<MyProfileStatSection> {
       final usedCountRaw = userRes['used_megaphone'];
       final usedCount = usedCountRaw is int ? usedCountRaw : 0;
 
-      // ✅ 4. 작성한 게시글 리스트
-      final postRes = await supabase
+      // ✅ 전체 게시글 데이터 불러오기 (likes 포함)
+      final boardRes = await supabase
           .from('Board')
-          .select('board_id')
+          .select('likes') // 꼭 likes 포함
           .eq('user_id', userId);
 
-      final boardIds = postRes.map((e) => e['board_id'] as int).toList();
-
-      // ✅ 5. 해당 게시글들의 좋아요 수 총합
       int likeSum = 0;
-      if (boardIds.isNotEmpty) {
-        final likesRes = await supabase
-            .from('likes')
-            .select('board_id')
-            .inFilter('board_id', boardIds);
-
-        likeSum = likesRes.length;
+      for (var post in boardRes) {
+        final likes = post['likes'];
+        if (likes is List) {
+          likeSum += likes.length;
+        }
       }
 
-      // ✅ 6. UI 업데이트 전에 mounted 체크
       if (!mounted) return;
       setState(() {
         usedMegaphone = usedCount;
-        postCount = postRes.length;
+        postCount = boardRes.length;
         totalLikesReceived = likeSum;
         isLoading = false;
       });
@@ -90,6 +82,7 @@ class _MyProfileStatSectionState extends State<MyProfileStatSection> {
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

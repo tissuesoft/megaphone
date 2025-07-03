@@ -3,7 +3,7 @@ import 'package:megaphone/screens/post_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OtherPeopleProfilePostList extends StatefulWidget {
-  final String userId; // 상대 유저의 user_id
+  final String userId;
 
   const OtherPeopleProfilePostList({super.key, required this.userId});
 
@@ -61,6 +61,13 @@ class _OtherPeopleProfilePostListState extends State<OtherPeopleProfilePostList>
     return 0;
   }
 
+  int getLikeCount(dynamic post) {
+    if (post['likes'] is List) {
+      return post['likes'].length;
+    }
+    return 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -80,6 +87,7 @@ class _OtherPeopleProfilePostListState extends State<OtherPeopleProfilePostList>
       itemBuilder: (context, index) {
         final post = posts[index];
         final commentCount = getCommentCount(post);
+        final likeCount = getLikeCount(post); // ✅ 좋아요 수 계산
 
         return GestureDetector(
           onTap: () {
@@ -116,7 +124,7 @@ class _OtherPeopleProfilePostListState extends State<OtherPeopleProfilePostList>
                           height: 14,
                         ),
                         const SizedBox(width: 4),
-                        Text('${post['likes'] ?? 0}'),
+                        Text('$likeCount'), // ✅ 변경
                         const SizedBox(width: 12),
                         Image.asset(
                           'assets/comment_icon.png',

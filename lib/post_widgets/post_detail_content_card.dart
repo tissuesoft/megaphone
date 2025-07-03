@@ -49,11 +49,19 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
 
 
   void _goToProfile() {
+    final user = widget.postData['Users'] ?? {};
+    final userId = user['user_id'];
+    print(userId);
+    if (userId == null) return;
+
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const OtherProfileScreen()),
+      MaterialPageRoute(
+        builder: (_) => OtherProfileScreen(userId: userId.toString()), // ✅ toString() 필수
+      ),
     );
   }
+
 
   String _getRemainingTimeText(String rawTime) {
     try {

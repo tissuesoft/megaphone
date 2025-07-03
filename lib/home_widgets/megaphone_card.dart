@@ -67,6 +67,7 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
             megaphone_time,
             created_at,
             Users (
+              user_id,
               user_nickname,
               used_megaphone
             )
@@ -91,6 +92,7 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
 
           // Users 테이블의 used_megaphone +1
           final userRes = response['Users'];
+          final userId = userRes?['Users']?['user_id']; // ✅ user_id 추출
           final usedCountRaw = userRes?['used_megaphone'];
           final usedCount = usedCountRaw is int ? usedCountRaw : 0;
           final newUsed = usedCount + 1;
@@ -301,9 +303,20 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
 
                 GestureDetector(
                   onTap: () {
+                    final userId = megaphonePost['user_id'];
+
+                    if (userId == null || userId.toString().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('유저 정보를 불러올 수 없습니다.')),
+                      );
+                      return;
+                    }
+
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const OtherProfileScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => OtherProfileScreen(userId: userId.toString()),
+                      ),
                     );
                   },
                   child: Text(

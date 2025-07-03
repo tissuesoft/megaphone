@@ -1,7 +1,76 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class OtherPeopleProfileStatSection extends StatelessWidget {
-  const OtherPeopleProfileStatSection({super.key});
+class OtherPeopleProfileStatSection extends StatefulWidget {
+  final String userId;
+
+  const OtherPeopleProfileStatSection({super.key, required this.userId});
+
+  @override
+  State<OtherPeopleProfileStatSection> createState() => _OtherPeopleProfileStatSectionState();
+}
+
+class _OtherPeopleProfileStatSectionState extends State<OtherPeopleProfileStatSection> {
+  int usedMegaphone = 0;
+  int postCount = 0;
+  int totalLikesReceived = 0;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchStats();
+  }
+
+  Future<void> fetchStats() async {
+    final supabase = Supabase.instance.client;
+
+    try {
+      // ✅ 1. 고확 당첨 수
+      final userRes = await supabase
+          .from('Users')
+          .select('used_megaphone')
+          .eq('user_id', widget.userId)
+          .single();
+
+      final usedCountRaw = userRes['used_megaphone'];
+      final usedCount = usedCountRaw is int ? usedCountRaw : 0;
+
+      // ✅ 2. 게시글 리스트
+      final postRes = await supabase
+          .from('Board')
+          .select('board_id')
+          .eq('user_id', widget.userId);
+
+      final boardIds = postRes.map((e) => e['board_id'] as int).toList();
+
+      // ✅ 3. 해당 게시글의 총 좋아요 수
+      int likeSum = 0;
+      if (boardIds.isNotEmpty) {
+        final likesRes = await supabase
+            .from('likes')
+            .select('board_id')
+            .inFilter('board_id', boardIds);
+
+        likeSum = likesRes.length;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        usedMegaphone = usedCount;
+        postCount = postRes.length;
+        totalLikesReceived = likeSum;
+        isLoading = false;
+      });
+
+    } catch (e) {
+      print('❌ OtherPeopleProfile 통계 불러오기 실패: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('상대 프로필 정보를 불러올 수 없습니다.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,25 +81,23 @@ class OtherPeopleProfileStatSection extends StatelessWidget {
       height: 81,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFF3F4F6)),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0xFFF3F4F6))),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
+          children: [
             _StatItem(
-              count: '12',
+              count: isLoading ? '-' : usedMegaphone.toString(),
               label: '고확 당첨',
             ),
             _StatItem(
-              count: '89',
+              count: isLoading ? '-' : postCount.toString(),
               label: '작성 글',
             ),
             _StatItem(
-              count: '1,234',
+              count: isLoading ? '-' : totalLikesReceived.toString(),
               label: '받은 공감',
             ),
           ],

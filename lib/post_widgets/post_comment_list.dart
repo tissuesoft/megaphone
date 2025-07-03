@@ -96,6 +96,7 @@ class PostCommentListState extends State<PostCommentList> {
         for (var comment in comments)
           PostCommentItem(
             commentId: comment['comment_id'],
+            userId: comment['Users']['user_id'], // ✅ 추가
             username: comment['Users']['user_nickname'],
             content: comment['comment'],
             timeAgo: _formatTimeAgo(comment['created_at']),
@@ -111,6 +112,7 @@ class PostCommentListState extends State<PostCommentList> {
 
 class PostCommentItem extends StatefulWidget {
   final int commentId;
+  final int userId; // ✅ 추가
   final String username;
   final String content;
   final String timeAgo;
@@ -120,6 +122,7 @@ class PostCommentItem extends StatefulWidget {
   const PostCommentItem({
     super.key,
     required this.commentId,
+    required this.userId,
     required this.username,
     required this.content,
     required this.timeAgo,
@@ -165,9 +168,12 @@ class _PostCommentItemState extends State<PostCommentItem> {
   }
 
   void _goToProfile() {
+
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const OtherProfileScreen()),
+      MaterialPageRoute(
+        builder: (context) => OtherProfileScreen(userId: widget.userId.toString()),
+      ),
     );
   }
 

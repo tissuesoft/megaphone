@@ -15,15 +15,34 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   int selectedTabIndex = 0;
 
+  Offset _dragStart = Offset.zero;
+  Offset _dragUpdate = Offset.zero;
+
+  void _handleSwipe() {
+    final dx = _dragUpdate.dx - _dragStart.dx;
+
+    if (dx < -50 && selectedTabIndex == 0) {
+      // 오른쪽 → 왼쪽: 게시글로
+      setState(() {
+        selectedTabIndex = 1;
+      });
+    } else if (dx > 50 && selectedTabIndex == 1) {
+      // 왼쪽 → 오른쪽: 고확기록으로
+      setState(() {
+        selectedTabIndex = 0;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          const ProfileHeader(),                    // 상단 타이틀 + 설정
-          const MyProfileStatSection(),            // ✅ 고확/글/공감 데이터 로드됨
-          MyProfileTabSection(                     // ✅ 탭 전환
+          const ProfileHeader(),
+          const MyProfileStatSection(),
+          MyProfileTabSection(
             selectedIndex: selectedTabIndex,
             onTabSelected: (index) {
               setState(() {
@@ -32,9 +51,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
           ),
           Expanded(
-            child: selectedTabIndex == 0
-                ? const MyProfileHighlightList()   // ✅ 고확 당첨 글 목록
-                : const MyProfilePostList(),       // ✅ 전체 작성 글 목록
+            child: GestureDetector(
+              onHorizontalDragStart: (details) {
+                _dragStart = details.globalPosition;
+              },
+              onHorizontalDragUpdate: (details) {
+                _dragUpdate = details.globalPosition;
+              },
+              onHorizontalDragEnd: (details) {
+                _handleSwipe();
+              },
+              child: selectedTabIndex == 0
+                  ? const MyProfileHighlightList()
+                  : const MyProfilePostList(),
+            ),
           ),
         ],
       ),

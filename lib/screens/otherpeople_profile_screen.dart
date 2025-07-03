@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:megaphone/otherpeople_profile_widgets/otherpeople_profile_header.dart';
-import 'package:megaphone/otherpeople_profile_widgets/otherpeople_profile_summary_section.dart';
 import 'package:megaphone/otherpeople_profile_widgets/otherpeople_profile_stat_section.dart';
 import 'package:megaphone/otherpeople_profile_widgets/otherpeople_profile_tab_section.dart';
 import 'package:megaphone/otherpeople_profile_widgets/otherpeople_profile_megaphone_list.dart';
 import 'package:megaphone/otherpeople_profile_widgets/otherpeople_profile_post_list.dart';
 
 class OtherProfileScreen extends StatefulWidget {
-  final userId; // ✅ 전달받는 상대방 유저의 ID
+  final userId;
 
   const OtherProfileScreen({super.key, required this.userId});
 
@@ -18,16 +17,33 @@ class OtherProfileScreen extends StatefulWidget {
 class _OtherProfileScreenState extends State<OtherProfileScreen> {
   int _selectedIndex = 0;
 
+  Offset _dragStart = Offset.zero;
+  Offset _dragUpdate = Offset.zero;
+
+  void _handleSwipe() {
+    final dx = _dragUpdate.dx - _dragStart.dx;
+
+    if (dx < -50 && _selectedIndex == 0) {
+      // 오른쪽 → 왼쪽 스와이프 → 게시글 탭으로
+      setState(() {
+        _selectedIndex = 1;
+      });
+    } else if (dx > 50 && _selectedIndex == 1) {
+      // 왼쪽 → 오른쪽 스와이프 → 고확기록 탭으로
+      setState(() {
+        _selectedIndex = 0;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: OtherPeopleProfileHeader(userId: widget.userId), // ✅ 헤더에 userId 전달
+      backgroundColor: Colors.white,
+      appBar: OtherPeopleProfileHeader(userId: widget.userId),
       body: Column(
         children: [
-          // 유저 통계 (고확 수, 작성 글 수, 받은 공감 수)
-          OtherPeopleProfileStatSection(userId: widget.userId), // ✅ 통계 위젯에 userId 전달
-
-          // 탭 선택 (고확기록 or 게시글)
+          OtherPeopleProfileStatSection(userId: widget.userId),
           OtherPeopleProfileTabSection(
             selectedIndex: _selectedIndex,
             onTabSelected: (index) {
@@ -36,12 +52,22 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
               });
             },
           ),
-
-          // 리스트 출력 (선택된 탭에 따라 분기)
           Expanded(
-            child: _selectedIndex == 0
-                ? OtherProfileHighlightList(userId: widget.userId) // ✅ 고확기록 리스트
-                : OtherPeopleProfilePostList(userId: widget.userId),     // ✅ 게시글 리스트
+            // 👉 스와이프 감지 영역
+            child: GestureDetector(
+              onHorizontalDragStart: (details) {
+                _dragStart = details.globalPosition;
+              },
+              onHorizontalDragUpdate: (details) {
+                _dragUpdate = details.globalPosition;
+              },
+              onHorizontalDragEnd: (details) {
+                _handleSwipe();
+              },
+              child: _selectedIndex == 0
+                  ? OtherProfileHighlightList(userId: widget.userId)
+                  : OtherPeopleProfilePostList(userId: widget.userId),
+            ),
           ),
         ],
       ),

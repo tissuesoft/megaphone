@@ -49,9 +49,6 @@ class _WritePostScreenState extends State<WritePostScreen> {
     final accessToken = await storage.read(key: 'kakao_access_token');
     final refreshToken = await storage.read(key: 'kakao_refresh_token');
 
-    print('🔐 accessToken: $accessToken');
-    print('🔐 refreshToken: $refreshToken');
-
     if (await isKakaoLoggedIn() == false) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('카카오톡으로 로그인해주세요.')),
@@ -66,10 +63,6 @@ class _WritePostScreenState extends State<WritePostScreen> {
     } catch (e) {
       print('❌ 카카오 사용자 정보 조회 실패: $e');
     }
-
-    print('✏️ content: "$content"');
-    print('🕒 selectedTime: $selectedTime');
-    print('🔑 kakaoId: $kakaoId');
 
     if (kakaoId == null || selectedTime == null || content.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -111,7 +104,7 @@ class _WritePostScreenState extends State<WritePostScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('게시글이 작성되었습니다.')),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       }
     } catch (e) {
       print('❌ 게시글 저장 실패: $e');

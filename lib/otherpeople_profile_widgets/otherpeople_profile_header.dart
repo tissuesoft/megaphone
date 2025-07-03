@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class OtherPeopleProfileHeader extends StatelessWidget implements PreferredSizeWidget {
+class OtherPeopleProfileHeader extends StatefulWidget implements PreferredSizeWidget {
   final String userId;
 
   const OtherPeopleProfileHeader({
@@ -10,6 +11,43 @@ class OtherPeopleProfileHeader extends StatelessWidget implements PreferredSizeW
 
   @override
   Size get preferredSize => const Size.fromHeight(69);
+
+  @override
+  State<OtherPeopleProfileHeader> createState() => _OtherPeopleProfileHeaderState();
+}
+
+class _OtherPeopleProfileHeaderState extends State<OtherPeopleProfileHeader> {
+  String userNickname = '';
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserNickname();
+  }
+
+  Future<void> fetchUserNickname() async {
+    final supabase = Supabase.instance.client;
+
+    try {
+      final userData = await supabase
+          .from('Users')
+          .select('user_nickname')
+          .eq('user_id', widget.userId)
+          .maybeSingle();
+
+      setState(() {
+        userNickname = userData?['user_nickname'] ?? '알 수 없음';
+        isLoading = false;
+      });
+    } catch (e) {
+      print('❌ 유저 닉네임 불러오기 실패: $e');
+      setState(() {
+        userNickname = '알 수 없음';
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,17 +67,19 @@ class OtherPeopleProfileHeader extends StatelessWidget implements PreferredSizeW
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // 가운데 "고확왕 user_id 프로필"
-            Text.rich(
+            // 가운데 "고확왕 userNickname 프로필"
+            isLoading
+                ? const CircularProgressIndicator()
+                : Text.rich(
               TextSpan(
                 children: [
                   TextSpan(
-                    text: userId,
+                    text: userNickname,
                     style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w700,
                       fontSize: 18,
-                      color: Color(0xFFFF6B35), // ✔️ 강조 색상
+                      color: Color(0xFFFF6B35),
                     ),
                   ),
                   const TextSpan(
@@ -57,7 +97,7 @@ class OtherPeopleProfileHeader extends StatelessWidget implements PreferredSizeW
 
             // 왼쪽 뒤로가기 버튼
             Positioned(
-              left: screenWidth * 0.04, // 약 16px
+              left: screenWidth * 0.04,
               top: (69 - 44) / 2,
               child: SizedBox(
                 width: 34,

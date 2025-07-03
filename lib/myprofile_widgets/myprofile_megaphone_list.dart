@@ -24,11 +24,11 @@ class _MyProfileHighlightListState extends State<MyProfileHighlightList> {
     final supabase = Supabase.instance.client;
 
     try {
-      // ✅ 1. 카카오 사용자 ID 조회
+      // 1. 카카오 사용자 ID 조회
       final kakaoUser = await UserApi.instance.me();
       final kakaoId = kakaoUser.id.toString();
 
-      // ✅ 2. Supabase user_id 조회
+      // 2. Supabase user_id 조회
       final userData = await supabase
           .from('Users')
           .select('user_id')
@@ -38,10 +38,17 @@ class _MyProfileHighlightListState extends State<MyProfileHighlightList> {
       if (userData == null) throw Exception('Users 테이블에 유저 정보 없음');
       final userId = userData['user_id'];
 
-      // ✅ 3. 해당 유저의 megaphone_win = true 게시글만 조회
+      // 3. 해당 유저의 고확 당첨 게시글 + 댓글 수 조회
       final res = await supabase
           .from('Board')
-          .select('*')
+          .select('''
+            board_id,
+            title,
+            likes,
+            megaphone_time,
+            created_at,
+            Comment(count)
+          ''')
           .eq('user_id', userId)
           .eq('megaphone_win', true)
           .order('created_at', ascending: false);
@@ -60,6 +67,13 @@ class _MyProfileHighlightListState extends State<MyProfileHighlightList> {
         isLoading = false;
       });
     }
+  }
+
+  int getCommentCount(dynamic post) {
+    if (post['Comment'] is List && post['Comment'].isNotEmpty) {
+      return post['Comment'][0]['count'] ?? 0;
+    }
+    return 0;
   }
 
   @override
@@ -82,30 +96,39 @@ class _MyProfileHighlightListState extends State<MyProfileHighlightList> {
     return ListView.separated(
       padding: EdgeInsets.zero,
       itemCount: posts.length,
-      separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF3F4F6)),
+      separatorBuilder: (_, __) =>
+      const Divider(height: 1, color: Color(0xFFF3F4F6)),
       itemBuilder: (context, index) {
         final post = posts[index];
+        final commentCount = getCommentCount(post);
 
         return GestureDetector(
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => PostScreen(boardId: post['id']),
+                builder: (context) => PostScreen(boardId: post['board_id']),
               ),
             );
           },
           child: Container(
             color: Colors.white,
-            padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: 12),
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.04,
+              vertical: 12,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // 상단: 날짜 + 좋아요/댓글 수
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      post['created_at']?.substring(0, 16)?.replaceAll('T', ' ') ?? '',
+                      post['megaphone_time']
+                          ?.substring(0, 16)
+                          ?.replaceAll('T', ' ') ??
+                          '',
                       style: const TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 14,
@@ -114,18 +137,27 @@ class _MyProfileHighlightListState extends State<MyProfileHighlightList> {
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.favorite, size: 14, color: Color(0xFFEF4444)),
+                        Image.asset(
+                          'assets/crown_icon_likes+1.png',
+                          width: 14,
+                          height: 14,
+                        ),
                         const SizedBox(width: 4),
                         Text('${post['likes'] ?? 0}'),
                         const SizedBox(width: 12),
-                        const Icon(Icons.chat_bubble_outline, size: 14),
+                        Image.asset(
+                          'assets/comment_icon.png',
+                          width: 14,
+                          height: 14,
+                        ),
                         const SizedBox(width: 4),
-                        Text('${post['comments'] ?? 0}'),
+                        Text('$commentCount'),
                       ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
+                // 본문 텍스트
                 Text(
                   post['title'] ?? '',
                   style: const TextStyle(

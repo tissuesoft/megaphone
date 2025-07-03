@@ -37,9 +37,17 @@ class _MyProfilePostListState extends State<MyProfilePostList> {
 
       final userId = userData['user_id'];
 
+      // ✅ 댓글 count 포함한 게시글 조회
       final res = await supabase
           .from('Board')
-          .select('*')
+          .select('''
+            board_id,
+            title,
+            likes,
+            megaphone_time,
+            created_at,
+            Comment(count)
+          ''')
           .eq('user_id', userId)
           .order('created_at', ascending: false);
 
@@ -49,10 +57,22 @@ class _MyProfilePostListState extends State<MyProfilePostList> {
       });
     } catch (e) {
       print('❌ 내 게시글 로딩 실패: $e');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('내 게시글을 불러오지 못했습니다.')),
       );
+      setState(() {
+        isLoading = false;
+      });
     }
+  }
+
+  // ✅ 댓글 수 파싱 함수
+  int getCommentCount(dynamic post) {
+    if (post['Comment'] is List && post['Comment'].isNotEmpty) {
+      return post['Comment'][0]['count'] ?? 0;
+    }
+    return 0;
   }
 
   @override
@@ -70,9 +90,11 @@ class _MyProfilePostListState extends State<MyProfilePostList> {
     return ListView.separated(
       padding: EdgeInsets.zero,
       itemCount: posts.length,
-      separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF3F4F6)),
+      separatorBuilder: (_, __) =>
+      const Divider(height: 1, color: Color(0xFFF3F4F6)),
       itemBuilder: (context, index) {
         final post = posts[index];
+        final commentCount = getCommentCount(post);
 
         return GestureDetector(
           onTap: () {
@@ -94,7 +116,10 @@ class _MyProfilePostListState extends State<MyProfilePostList> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      post['created_at']?.substring(0, 16)?.replaceAll('T', ' ') ?? '',
+                      post['megaphone_time']
+                          ?.substring(0, 16)
+                          ?.replaceAll('T', ' ') ??
+                          '',
                       style: const TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 14,
@@ -103,13 +128,21 @@ class _MyProfilePostListState extends State<MyProfilePostList> {
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.favorite, size: 14, color: Color(0xFFEF4444)),
+                        Image.asset(
+                          'assets/crown_icon_likes+1.png',
+                          width: 14,
+                          height: 14,
+                        ),
                         const SizedBox(width: 4),
                         Text('${post['likes'] ?? 0}'),
                         const SizedBox(width: 12),
-                        const Icon(Icons.chat_bubble_outline, size: 14),
+                        Image.asset(
+                          'assets/comment_icon.png',
+                          width: 14,
+                          height: 14,
+                        ),
                         const SizedBox(width: 4),
-                        Text('${post['comments'] ?? 0}'),
+                        Text('$commentCount'),
                       ],
                     ),
                   ],

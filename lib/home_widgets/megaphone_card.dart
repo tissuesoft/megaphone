@@ -17,17 +17,17 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
   bool isLiked = false;
   dynamic megaphonePost;
   bool isLoading = true;
-  Timer? _timer; // ✅ 정시마다 새로고침용 타이머
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     fetchTopPostForCurrentHour();
-    _startHourlyRefresh(); // ✅ 자동 새로고침 시작
+    _startHourlyRefresh();
   }
 
   void _startHourlyRefresh() {
-    final now = DateTime.now().toUtc().add(const Duration(hours: 9)); // KST 기준
+    final now = DateTime.now().toUtc().add(const Duration(hours: 9)); // KST
     final nextFullHour = DateTime(now.year, now.month, now.day, now.hour + 1);
     final durationUntilNextHour = nextFullHour.difference(now);
 
@@ -38,20 +38,20 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
         fetchTopPostForCurrentHour();
       });
 
-      fetchTopPostForCurrentHour(); // 첫 정시에도 바로 갱신
+      fetchTopPostForCurrentHour();
     });
   }
 
   @override
   void dispose() {
-    _timer?.cancel(); // 타이머 해제
+    _timer?.cancel();
     super.dispose();
   }
 
   Future<void> fetchTopPostForCurrentHour() async {
     final supabase = Supabase.instance.client;
 
-    final now = DateTime.now().toUtc().add(const Duration(hours: 9)); // KST 기준
+    final now = DateTime.now().toUtc().add(const Duration(hours: 9)); // KST
     final targetHour = DateTime(now.year, now.month, now.day, now.hour);
     final formatted = DateFormat("yyyy-MM-dd HH:00:00").format(targetHour);
 
@@ -60,9 +60,12 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
           .from('Board')
           .select('''
             board_id,
+            user_id,
             title,
             likes,
+            megaphone_win,
             megaphone_time,
+            created_at,
             Users (
               user_nickname,
               used_megaphone
@@ -70,15 +73,49 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
           ''')
           .filter('megaphone_time', 'eq', formatted)
           .order('likes', ascending: false)
+          .order('created_at', ascending: true) // 가장 먼저 작성한 글 우선
           .limit(1)
           .maybeSingle();
 
-      setState(() {
-        megaphonePost = response;
-        isLoading = false;
-      });
+      if (response != null) {
+        final boardId = response['board_id'];
+        final userId = response['user_id'];
+
+        // ✅ 이미 당첨된 글이면 +1 처리하지 않음
+        if (response['megaphone_win'] != true) {
+          // 게시글을 megaphone_win = true로 설정
+          await supabase
+              .from('Board')
+              .update({'megaphone_win': true})
+              .eq('board_id', boardId);
+
+          // Users 테이블의 used_megaphone +1
+          final userRes = response['Users'];
+          final usedCountRaw = userRes?['used_megaphone'];
+          final usedCount = usedCountRaw is int ? usedCountRaw : 0;
+          final newUsed = usedCount + 1;
+
+          await supabase
+              .from('Users')
+              .update({'used_megaphone': newUsed})
+              .eq('user_id', userId);
+        }
+
+        if (!mounted) return;
+        setState(() {
+          megaphonePost = response;
+          isLoading = false;
+        });
+      } else {
+        if (!mounted) return;
+        setState(() {
+          megaphonePost = null;
+          isLoading = false;
+        });
+      }
     } catch (e) {
       print('❌ Supabase 오류: $e');
+      if (!mounted) return;
       setState(() {
         isLoading = false;
       });
@@ -215,8 +252,6 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // 좋아요 버튼
-                // 좋아요 버튼 (수정됨)
                 GestureDetector(
                   onTap: () async {
                     setState(() {
@@ -264,7 +299,6 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
                 ),
                 const SizedBox(width: 16),
 
-                // 프로필 영역
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -272,22 +306,17 @@ class _MegaphoneCardState extends State<MegaphoneCard> {
                       MaterialPageRoute(builder: (_) => const OtherProfileScreen()),
                     );
                   },
-                  child: Row(
-                    children: [
-                      Text(
-                        nickname,
-                        style: const TextStyle(
-                          fontFamily: 'Montserrat',
-                          fontSize: 15,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    nickname,
+                    style: const TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontSize: 15,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
 
-                // 고확 배지
                 if (usedMegaphone > 0)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

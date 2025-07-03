@@ -1,7 +1,95 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
-class MyProfileStatSection extends StatelessWidget {
+class MyProfileStatSection extends StatefulWidget {
   const MyProfileStatSection({super.key});
+
+  @override
+  State<MyProfileStatSection> createState() => _MyProfileStatSectionState();
+}
+
+class _MyProfileStatSectionState extends State<MyProfileStatSection> {
+  int usedMegaphone = 0;
+  int postCount = 0;
+  int totalLikesReceived = 0;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchStats();
+  }
+
+  Future<void> fetchStats() async {
+    final supabase = Supabase.instance.client;
+    final storage = FlutterSecureStorage();
+
+    try {
+      // ✅ 1. 카카오 로그인 사용자 정보 가져오기
+      final kakaoUser = await UserApi.instance.me();
+      final kakaoId = kakaoUser.id.toString();
+
+      // ✅ 2. Supabase Users 테이블에서 user_id 조회
+      final userData = await supabase
+          .from('Users')
+          .select('user_id')
+          .eq('kakao_id', kakaoId)
+          .maybeSingle();
+
+      if (userData == null) {
+        throw Exception('Users 테이블에서 사용자 정보를 찾을 수 없습니다.');
+      }
+
+      final userId = userData['user_id'];
+
+      // ✅ 3. 고확 당첨 수 (Users 테이블의 used_megaphone)
+      final userRes = await supabase
+          .from('Users')
+          .select('used_megaphone')
+          .eq('user_id', userId)
+          .single();
+
+      final usedCountRaw = userRes['used_megaphone'];
+      final usedCount = usedCountRaw is int ? usedCountRaw : 0;
+
+      // ✅ 4. 작성한 게시글 리스트
+      final postRes = await supabase
+          .from('Board')
+          .select('board_id')
+          .eq('user_id', userId);
+
+      final boardIds = postRes.map((e) => e['board_id'] as int).toList();
+
+      // ✅ 5. 해당 게시글들의 좋아요 수 총합
+      int likeSum = 0;
+      if (boardIds.isNotEmpty) {
+        final likesRes = await supabase
+            .from('likes')
+            .select('board_id')
+            .inFilter('board_id', boardIds);
+
+        likeSum = likesRes.length;
+      }
+
+      // ✅ 6. UI 업데이트 전에 mounted 체크
+      if (!mounted) return;
+      setState(() {
+        usedMegaphone = usedCount;
+        postCount = postRes.length;
+        totalLikesReceived = likeSum;
+        isLoading = false;
+      });
+
+    } catch (e) {
+      print('❌ MyProfile 통계 불러오기 실패: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('내 프로필 정보를 불러올 수 없습니다.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,25 +100,23 @@ class MyProfileStatSection extends StatelessWidget {
       height: 81,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFF3F4F6)),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0xFFF3F4F6))),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
+          children: [
             _StatItem(
-              count: '12',
+              count: isLoading ? '-' : usedMegaphone.toString(),
               label: '고확 당첨',
             ),
             _StatItem(
-              count: '89',
+              count: isLoading ? '-' : postCount.toString(),
               label: '작성 글',
             ),
             _StatItem(
-              count: '1,234',
+              count: isLoading ? '-' : totalLikesReceived.toString(),
               label: '받은 공감',
             ),
           ],
@@ -63,7 +149,7 @@ class _StatItem extends StatelessWidget {
               fontFamily: 'Poppins',
               fontSize: 24,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF111827), // 모든 숫자 색상을 검정색으로 고정
+              color: Color(0xFF111827),
             ),
           ),
           const SizedBox(height: 4),

@@ -38,12 +38,12 @@ class _MyProfileHighlightListState extends State<MyProfileHighlightList> {
       if (userData == null) throw Exception('Users 테이블에 유저 정보 없음');
       final userId = userData['user_id'];
 
-      // ✅ 3. 해당 유저의 고확 당첨 글 조회
+      // ✅ 3. 해당 유저의 megaphone_win = true 게시글만 조회
       final res = await supabase
           .from('Board')
           .select('*')
           .eq('user_id', userId)
-          .eq('used_megaphone', true)
+          .eq('megaphone_win', true)
           .order('created_at', ascending: false);
 
       setState(() {
@@ -52,9 +52,13 @@ class _MyProfileHighlightListState extends State<MyProfileHighlightList> {
       });
     } catch (e) {
       print('❌ 고확 게시글 로딩 실패: $e');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('고확 기록을 불러오지 못했습니다.')),
       );
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -67,7 +71,12 @@ class _MyProfileHighlightListState extends State<MyProfileHighlightList> {
     }
 
     if (posts.isEmpty) {
-      return const Center(child: Text('고확에 당첨된 기록이 없습니다.'));
+      return const Center(
+        child: Text(
+          '고확에 사용된 게시글이 없습니다.',
+          style: TextStyle(fontSize: 14),
+        ),
+      );
     }
 
     return ListView.separated(

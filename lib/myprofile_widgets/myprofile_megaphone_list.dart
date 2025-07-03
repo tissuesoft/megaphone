@@ -1,39 +1,74 @@
 import 'package:flutter/material.dart';
-import 'package:megaphone/screens/post_screen.dart'; // ✅ 추가
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import 'package:megaphone/screens/post_screen.dart';
 
-class MyProfileHighlightList extends StatelessWidget {
+class MyProfileHighlightList extends StatefulWidget {
   const MyProfileHighlightList({super.key});
+
+  @override
+  State<MyProfileHighlightList> createState() => _MyProfileHighlightListState();
+}
+
+class _MyProfileHighlightListState extends State<MyProfileHighlightList> {
+  List<dynamic> posts = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchHighlightPosts();
+  }
+
+  Future<void> fetchHighlightPosts() async {
+    final supabase = Supabase.instance.client;
+
+    try {
+      // ✅ 1. 카카오 사용자 ID 조회
+      final kakaoUser = await UserApi.instance.me();
+      final kakaoId = kakaoUser.id.toString();
+
+      // ✅ 2. Supabase user_id 조회
+      final userData = await supabase
+          .from('Users')
+          .select('user_id')
+          .eq('kakao_id', kakaoId)
+          .maybeSingle();
+
+      if (userData == null) throw Exception('Users 테이블에 유저 정보 없음');
+      final userId = userData['user_id'];
+
+      // ✅ 3. 해당 유저의 고확 당첨 글 조회
+      final res = await supabase
+          .from('Board')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('used_megaphone', true)
+          .order('created_at', ascending: false);
+
+      setState(() {
+        posts = res;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('❌ 고확 게시글 로딩 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('고확 기록을 불러오지 못했습니다.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
-    final posts = [
-      {
-        'date': '2024.06.23 12:00',
-        'text': '오늘 점심 뭐 먹지? 고민하는 시간에 배고파 죽겠다 ㅠㅠ',
-        'likes': '156',
-        'comments': '42',
-      },
-      {
-        'date': '2024.06.23 12:00',
-        'text': '금요일 저녁인데 집에서 넷플릭스 보는 나... 이게 진짜 행복이야',
-        'likes': '156',
-        'comments': '42',
-      },
-      {
-        'date': '2024.06.23 12:00',
-        'text': '비 오는 날 카페에서 아아 마시면서 창밖 보기... 힐링 그 자체',
-        'likes': '156',
-        'comments': '42',
-      },
-      {
-        'date': '2024.06.23 12:00',
-        'text': '비 오는 날 카페에서 아아 마시면서 창밖 보기... 힐링 그 자체',
-        'likes': '156',
-        'comments': '42',
-      },
-    ];
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (posts.isEmpty) {
+      return const Center(child: Text('고확에 당첨된 기록이 없습니다.'));
+    }
 
     return ListView.separated(
       padding: EdgeInsets.zero,
@@ -41,12 +76,13 @@ class MyProfileHighlightList extends StatelessWidget {
       separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF3F4F6)),
       itemBuilder: (context, index) {
         final post = posts[index];
+
         return GestureDetector(
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const PostScreen(boardId: 1), // ✅ 임시 boardId 전달
+                builder: (context) => PostScreen(boardId: post['id']),
               ),
             );
           },
@@ -56,51 +92,33 @@ class MyProfileHighlightList extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 상단 날짜 및 아이콘 줄
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      post['date']!,
+                      post['created_at']?.substring(0, 16)?.replaceAll('T', ' ') ?? '',
                       style: const TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF111827),
                       ),
                     ),
                     Row(
                       children: [
                         const Icon(Icons.favorite, size: 14, color: Color(0xFFEF4444)),
                         const SizedBox(width: 4),
-                        Text(
-                          post['likes']!,
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xFF4B5563),
-                          ),
-                        ),
+                        Text('${post['likes'] ?? 0}'),
                         const SizedBox(width: 12),
-                        const Icon(Icons.chat_bubble_outline, size: 14, color: Color(0xFF000000)),
+                        const Icon(Icons.chat_bubble_outline, size: 14),
                         const SizedBox(width: 4),
-                        Text(
-                          post['comments']!,
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xFF4B5563),
-                          ),
-                        ),
+                        Text('${post['comments'] ?? 0}'),
                       ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  post['text']!,
+                  post['title'] ?? '',
                   style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 16,

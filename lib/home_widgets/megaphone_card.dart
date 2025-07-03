@@ -10,10 +10,10 @@ class MegaphoneCard extends StatefulWidget {
   const MegaphoneCard({super.key});
 
   @override
-  State<MegaphoneCard> createState() => _MegaphoneCardState();
+  State<MegaphoneCard> createState() => MegaphoneCardState ();
 }
 
-class _MegaphoneCardState extends State<MegaphoneCard> {
+class MegaphoneCardState extends State<MegaphoneCard> {
   bool isLiked = false;
   dynamic megaphonePost;
   bool isLoading = true;

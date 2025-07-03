@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../home_widgets/home_header.dart';
 import '../home_widgets/megaphone_card.dart';
 import '../home_widgets/time_filter_bar.dart';
@@ -19,8 +18,9 @@ class _HomeScreenState extends State<HomeScreen> {
   String selectedTab = 'latest';
   DateTime? selectedDateTime;
 
-  final GlobalKey<MegaphonePostListLatestState> latestKey =
-  GlobalKey<MegaphonePostListLatestState>();
+  final GlobalKey<MegaphonePostListLatestState> latestKey = GlobalKey();
+  final GlobalKey<MegaphonePostListLikedState> likedKey = GlobalKey();
+  final GlobalKey<MegaphoneCardState> cardKey = GlobalKey();
 
   Offset _dragStart = Offset.zero;
   Offset _dragUpdate = Offset.zero;
@@ -49,10 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final dx = _dragUpdate.dx - _dragStart.dx;
 
     if (dx < -50 && selectedTab == 'latest') {
-      // 오른쪽에서 왼쪽 → 공감순으로 변경
       onTabSelected('liked');
     } else if (dx > 50 && selectedTab == 'liked') {
-      // 왼쪽에서 오른쪽 → 최신순으로 변경
       onTabSelected('latest');
     }
   }
@@ -68,11 +66,22 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const WritePostScreen()),
           );
+
+          // ✅ 게시글 작성 완료 후 돌아온 경우만 새로고침
+          if (result == true) {
+            await cardKey.currentState?.fetchTopPostForCurrentHour();
+            if (selectedTab == 'latest') {
+              await latestKey.currentState?.fetchPosts();
+            } else {
+              await likedKey.currentState?.fetchPosts();
+            }
+            setState(() {});
+          }
         },
         backgroundColor: const Color(0xFFFF6B35),
         shape: const CircleBorder(),
@@ -81,8 +90,11 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
+            await cardKey.currentState?.fetchTopPostForCurrentHour();
             if (selectedTab == 'latest') {
               await latestKey.currentState?.fetchPosts();
+            } else {
+              await likedKey.currentState?.fetchPosts();
             }
             setState(() {});
           },
@@ -91,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
               const HomeHeader(),
-              const MegaphoneCard(),
+              MegaphoneCard(key: cardKey),
               TimeFilterBar(
                 selectedDateTime: selectedDateTime!,
                 onTimeSelected: onTimeSelected,
@@ -100,7 +112,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 selectedTab: selectedTab,
                 onTabChanged: onTabSelected,
               ),
-              // 👉 여기만 스와이프 가능하게 GestureDetector로 감쌈
               GestureDetector(
                 onHorizontalDragStart: (details) {
                   _dragStart = details.globalPosition;
@@ -117,6 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   selectedDateTime: selectedDateTime!,
                 )
                     : MegaphonePostListLiked(
+                  key: likedKey,
                   selectedDateTime: selectedDateTime!,
                 ),
               ),

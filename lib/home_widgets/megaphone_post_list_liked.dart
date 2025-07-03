@@ -36,12 +36,14 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
           .from('Board')
           .select('''
             board_id,
+            user_id,
             title,
             created_at,
             likes,
             megaphone_time,
             Comment(count),
             Users (
+              user_id,
               user_nickname,
               used_megaphone
             )
@@ -97,6 +99,7 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
     return Column(
       children: filteredPosts.map((item) {
         final user = item['Users'] ?? {};
+        final userId = item['Users']?['user_id'];
         final nickname = user['user_nickname'] ?? '알 수 없음';
         final usedMegaphone =
             int.tryParse(user['used_megaphone']?.toString() ?? '0') ?? 0;
@@ -150,10 +153,19 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
                     GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: () {
+                        final userId = item['Users']?['user_id'];
+                        if (userId == null || userId.toString().isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('유저 정보를 불러올 수 없습니다.')),
+                          );
+                          return;
+                        }
+
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const OtherProfileScreen()),
+                            builder: (_) => OtherProfileScreen(userId: userId.toString()),
+                          ),
                         );
                       },
                       child: Row(
@@ -169,19 +181,14 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
                           if (usedMegaphone > 0) ...[
                             const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFED7AA),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Row(
                                 children: [
-                                  Image.asset(
-                                    'assets/megaphoneCountIcon.png',
-                                    width: 12,
-                                    height: 12,
-                                  ),
+                                  Image.asset('assets/megaphoneCountIcon.png', width: 12),
                                   const SizedBox(width: 4),
                                   Text(
                                     '$usedMegaphone회',
@@ -199,6 +206,7 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
                         ],
                       ),
                     ),
+
                     Text(
                       postTime,
                       style: const TextStyle(

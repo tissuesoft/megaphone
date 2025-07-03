@@ -1,40 +1,83 @@
 import 'package:flutter/material.dart';
-import 'package:megaphone/screens/post_screen.dart'; // ✅ 추가
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:megaphone/screens/post_screen.dart';
 
-class OtherPeopleProfileHighlightList extends StatelessWidget {
-  const OtherPeopleProfileHighlightList({super.key});
+class OtherProfileHighlightList extends StatefulWidget {
+  final String userId; // ✅ 전달된 userId
+
+  const OtherProfileHighlightList({super.key, required this.userId});
+
+  @override
+  State<OtherProfileHighlightList> createState() => _OtherProfileHighlightListState();
+}
+
+class _OtherProfileHighlightListState extends State<OtherProfileHighlightList> {
+  List<dynamic> posts = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchHighlightPosts();
+  }
+
+  Future<void> fetchHighlightPosts() async {
+    final supabase = Supabase.instance.client;
+
+    try {
+      final res = await supabase
+          .from('Board')
+          .select('''
+            board_id,
+            title,
+            likes,
+            megaphone_time,
+            created_at,
+            Comment(count)
+          ''')
+          .eq('user_id', widget.userId)
+          .eq('megaphone_win', true)
+          .order('created_at', ascending: false);
+
+      setState(() {
+        posts = res;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('❌ 고확 게시글 로딩 실패: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('고확 기록을 불러오지 못했습니다.')),
+      );
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  int getCommentCount(dynamic post) {
+    if (post['Comment'] is List && post['Comment'].isNotEmpty) {
+      return post['Comment'][0]['count'] ?? 0;
+    }
+    return 0;
+  }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // 더미 데이터 리스트
-    final posts = [
-      {
-        'date': '2024.06.23 12:00',
-        'text': '오늘 점심 뭐 먹지? 고민하는 시간에 배고파 죽겠다 ㅠㅠ',
-        'likes': '156',
-        'comments': '42',
-      },
-      {
-        'date': '2024.06.23 12:00',
-        'text': '금요일 저녁인데 집에서 넷플릭스 보는 나... 이게 진짜 행복이야',
-        'likes': '156',
-        'comments': '42',
-      },
-      {
-        'date': '2024.06.23 12:00',
-        'text': '비 오는 날 카페에서 아아 마시면서 창밖 보기... 힐링 그 자체',
-        'likes': '156',
-        'comments': '42',
-      },
-      {
-        'date': '2024.06.23 12:00',
-        'text': '비 오는 날 카페에서 아아 마시면서 창밖 보기... 힐링 그 자체',
-        'likes': '156',
-        'comments': '42',
-      },
-    ];
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (posts.isEmpty) {
+      return const Center(
+        child: Text(
+          '고확에 사용된 게시글이 없습니다.',
+          style: TextStyle(fontSize: 14),
+        ),
+      );
+    }
 
     return ListView.separated(
       padding: EdgeInsets.zero,
@@ -43,12 +86,14 @@ class OtherPeopleProfileHighlightList extends StatelessWidget {
       const Divider(height: 1, color: Color(0xFFF3F4F6)),
       itemBuilder: (context, index) {
         final post = posts[index];
+        final commentCount = getCommentCount(post);
+
         return GestureDetector(
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const PostScreen(boardId: 1), // ✅ 임시 boardId 전달
+                builder: (context) => PostScreen(boardId: post['board_id']),
               ),
             );
           },
@@ -61,53 +106,46 @@ class OtherPeopleProfileHighlightList extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 상단 날짜 및 아이콘 줄
+                // 상단: 날짜 + 좋아요/댓글 수
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      post['date']!,
+                      post['megaphone_time']
+                          ?.substring(0, 16)
+                          ?.replaceAll('T', ' ') ??
+                          '',
                       style: const TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF111827),
                       ),
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.favorite,
-                            size: 14, color: Color(0xFFEF4444)),
-                        const SizedBox(width: 4),
-                        Text(
-                          post['likes']!,
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xFF4B5563),
-                          ),
+                        Image.asset(
+                          'assets/crown_icon_likes+1.png',
+                          width: 14,
+                          height: 14,
                         ),
+                        const SizedBox(width: 4),
+                        Text('${post['likes'] ?? 0}'),
                         const SizedBox(width: 12),
-                        const Icon(Icons.chat_bubble_outline,
-                            size: 14, color: Color(0xFF000000)),
-                        const SizedBox(width: 4),
-                        Text(
-                          post['comments']!,
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xFF4B5563),
-                          ),
+                        Image.asset(
+                          'assets/comment_icon.png',
+                          width: 14,
+                          height: 14,
                         ),
+                        const SizedBox(width: 4),
+                        Text('$commentCount'),
                       ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
+                // 본문 텍스트
                 Text(
-                  post['text']!,
+                  post['title'] ?? '',
                   style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 16,

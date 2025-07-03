@@ -47,6 +47,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
             megaphone_time,
             Comment(count),
             Users (
+              user_id,
               user_nickname,
               used_megaphone
             )
@@ -111,6 +112,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
     return Column(
       children: filteredPosts.map((item) {
         final user = item['Users'] ?? {};
+        final userId = item['Users']?['user_id']; // ✅ user_id 추출
         final nickname = user['user_nickname'] ?? '알 수 없음';
         final usedMegaphone =
             int.tryParse(user['used_megaphone']?.toString() ?? '0') ?? 0;
@@ -167,7 +169,8 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const OtherProfileScreen()),
+                            builder: (_) => OtherProfileScreen(userId: userId.toString()), // ✅ 여기!
+                          ),
                         );
                       },
                       child: Row(
@@ -183,8 +186,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                           if (usedMegaphone > 0) ...[
                             const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFED7AA),
                                 borderRadius: BorderRadius.circular(4),

@@ -4,14 +4,12 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:megaphone/screens/otherpeople_profile_screen.dart';
 import 'package:megaphone/screens/post_screen.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class MegaphonePostListLatest extends StatefulWidget {
   final DateTime selectedDateTime;
 
-  const MegaphonePostListLatest({
-    super.key,
-    required this.selectedDateTime,
-  });
+  const MegaphonePostListLatest({super.key, required this.selectedDateTime});
 
   @override
   State<MegaphonePostListLatest> createState() =>
@@ -32,6 +30,11 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
   void initState() {
     super.initState();
     fetchPosts();
+  }
+
+  Future<String?> getKakaoId() async {
+    final storage = FlutterSecureStorage();
+    return await storage.read(key: 'kakao_access_token') ?? null;
   }
 
   Future<void> fetchPosts() async {
@@ -59,7 +62,11 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
         posts = response;
         for (var item in posts) {
           final boardId = item['board_id'];
-          likeCounts[boardId] = item['likes'] ?? 0;
+          // likes가 배열(jsonb)이므로 length로 카운트
+          likeCounts[boardId] = (item['likes'] is List)
+              ? item['likes'].length
+              : 0;
+          // 좋아요 상태는 기본값 false (실제 유저별 상태는 UI에서 처리)
           likedStates[boardId] = false;
         }
         isLoading = false;
@@ -125,20 +132,20 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
         final timeAgo = _getTimeAgo(createdAt);
         final remaining = _getRemainingTime(postDateTime);
         final boardId = item['board_id'];
-        final commentCount = item['Comment'] is List &&
-            item['Comment'].isNotEmpty
+        final commentCount =
+            item['Comment'] is List && item['Comment'].isNotEmpty
             ? item['Comment'][0]['count'] ?? 0
             : 0;
-        int likeCount = likeCounts[boardId] ?? 0;
+        List<String> likesCount = item['likes'] is List
+            ? List<String>.from(item['likes'])
+            : [];
         bool isLiked = likedStates[boardId] ?? false;
 
         return GestureDetector(
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => PostScreen(boardId: boardId),
-              ),
+              MaterialPageRoute(builder: (_) => PostScreen(boardId: boardId)),
             );
           },
           child: Container(
@@ -169,7 +176,9 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => OtherProfileScreen(userId: userId.toString()), // ✅ 여기!
+                            builder: (_) => OtherProfileScreen(
+                              userId: userId.toString(),
+                            ), // ✅ 여기!
                           ),
                         );
                       },
@@ -186,7 +195,10 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                           if (usedMegaphone > 0) ...[
                             const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFED7AA),
                                 borderRadius: BorderRadius.circular(4),
@@ -218,7 +230,9 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                     Text(
                       postTime,
                       style: const TextStyle(
-                          fontFamily: 'Montserrat', fontSize: 12),
+                        fontFamily: 'Montserrat',
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -226,13 +240,17 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                 Text(
                   timeAgo,
                   style: const TextStyle(
-                      fontFamily: 'Montserrat', fontSize: 12),
+                    fontFamily: 'Montserrat',
+                    fontSize: 12,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   item['title'] ?? '내용 없음',
                   style: const TextStyle(
-                      fontFamily: 'Montserrat', fontSize: 16),
+                    fontFamily: 'Montserrat',
+                    fontSize: 16,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -243,20 +261,49 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () async {
-                            final newLikedState = !(likedStates[boardId] ?? false);
-                            final newLikeCount =
-                                (likeCounts[boardId] ?? 0) + (newLikedState ? 1 : -1);
+                            final kakaoId = await getKakaoId();
+                            if (kakaoId == null) return;
+
+                            // 기존 likes(jsonb) 배열 가져오기
+                            final supabase = Supabase.instance.client;
+                            Map<String, dynamic> boardRow = {};
+                            try {
+                              final res = await supabase
+                                  .from('Board')
+                                  .select('likes')
+                                  .eq('board_id', boardId)
+                                  .maybeSingle();
+                              boardRow = res ?? {};
+                            } catch (e) {
+                              print('❌ likes 조회 실패: $e');
+                            }
+
+                            List<dynamic> likedUserList = [];
+                            if (boardRow['likes'] is List) {
+                              likedUserList = List<String>.from(
+                                boardRow['likes'],
+                              );
+                            }
+
+                            final alreadyLiked = likedUserList.contains(
+                              kakaoId,
+                            );
+
+                            if (alreadyLiked) {
+                              likedUserList.remove(kakaoId);
+                            } else {
+                              likedUserList.add(kakaoId);
+                            }
 
                             setState(() {
-                              likedStates[boardId] = newLikedState;
-                              likeCounts[boardId] = newLikeCount;
+                              likedStates[boardId] = !alreadyLiked;
+                              likeCounts[boardId] = likedUserList.length;
                             });
 
-                            final supabase = Supabase.instance.client;
                             try {
                               await supabase
                                   .from('Board')
-                                  .update({'likes': newLikeCount})
+                                  .update({'likes': likedUserList})
                                   .eq('board_id', boardId);
                             } catch (e) {
                               print('❌ 좋아요 업데이트 실패: $e');
@@ -273,7 +320,7 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '$likeCount',
+                                '${likesCount.length}', // ← 좋아요 수를 likesCount.length로 표시
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: Color(0xFFFF6B35),
@@ -301,7 +348,9 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
                     Text(
                       remaining,
                       style: const TextStyle(
-                          fontFamily: 'Montserrat', fontSize: 12),
+                        fontFamily: 'Montserrat',
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),

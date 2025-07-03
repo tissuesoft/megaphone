@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:megaphone/screens/post_screen.dart';
 
 class OtherProfileHighlightList extends StatefulWidget {
-  final String userId; // ✅ 전달된 userId
+  final String userId;
 
   const OtherProfileHighlightList({super.key, required this.userId});
 
@@ -62,6 +62,14 @@ class _OtherProfileHighlightListState extends State<OtherProfileHighlightList> {
     return 0;
   }
 
+  int getLikeCount(dynamic post) {
+    // ✅ List인지 확인 후 길이 반환
+    if (post['likes'] is List) {
+      return post['likes'].length;
+    }
+    return 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -82,11 +90,11 @@ class _OtherProfileHighlightListState extends State<OtherProfileHighlightList> {
     return ListView.separated(
       padding: EdgeInsets.zero,
       itemCount: posts.length,
-      separatorBuilder: (_, __) =>
-      const Divider(height: 1, color: Color(0xFFF3F4F6)),
+      separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF3F4F6)),
       itemBuilder: (context, index) {
         final post = posts[index];
         final commentCount = getCommentCount(post);
+        final likeCount = getLikeCount(post); // ✅ 추가된 처리
 
         return GestureDetector(
           onTap: () {
@@ -129,7 +137,7 @@ class _OtherProfileHighlightListState extends State<OtherProfileHighlightList> {
                           height: 14,
                         ),
                         const SizedBox(width: 4),
-                        Text('${post['likes'] ?? 0}'),
+                        Text('$likeCount'), // ✅
                         const SizedBox(width: 12),
                         Image.asset(
                           'assets/comment_icon.png',
@@ -143,7 +151,6 @@ class _OtherProfileHighlightListState extends State<OtherProfileHighlightList> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                // 본문 텍스트
                 Text(
                   post['title'] ?? '',
                   style: const TextStyle(

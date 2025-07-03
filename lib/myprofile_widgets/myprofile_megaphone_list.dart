@@ -10,6 +10,8 @@ class MyProfileHighlightList extends StatefulWidget {
   State<MyProfileHighlightList> createState() => _MyProfileHighlightListState();
 }
 
+// ... 생략된 import들은 그대로 유지
+
 class _MyProfileHighlightListState extends State<MyProfileHighlightList> {
   List<dynamic> posts = [];
   bool isLoading = true;
@@ -24,11 +26,9 @@ class _MyProfileHighlightListState extends State<MyProfileHighlightList> {
     final supabase = Supabase.instance.client;
 
     try {
-      // 1. 카카오 사용자 ID 조회
       final kakaoUser = await UserApi.instance.me();
       final kakaoId = kakaoUser.id.toString();
 
-      // 2. Supabase user_id 조회
       final userData = await supabase
           .from('Users')
           .select('user_id')
@@ -38,7 +38,6 @@ class _MyProfileHighlightListState extends State<MyProfileHighlightList> {
       if (userData == null) throw Exception('Users 테이블에 유저 정보 없음');
       final userId = userData['user_id'];
 
-      // 3. 해당 유저의 고확 당첨 게시글 + 댓글 수 조회
       final res = await supabase
           .from('Board')
           .select('''
@@ -76,6 +75,14 @@ class _MyProfileHighlightListState extends State<MyProfileHighlightList> {
     return 0;
   }
 
+  int getLikeCount(dynamic post) {
+    // ✅ 좋아요 배열 길이 계산
+    if (post['likes'] is List) {
+      return post['likes'].length;
+    }
+    return 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -101,6 +108,7 @@ class _MyProfileHighlightListState extends State<MyProfileHighlightList> {
       itemBuilder: (context, index) {
         final post = posts[index];
         final commentCount = getCommentCount(post);
+        final likeCount = getLikeCount(post); // ✅ 배열 기반 좋아요 수 계산
 
         return GestureDetector(
           onTap: () {
@@ -143,7 +151,7 @@ class _MyProfileHighlightListState extends State<MyProfileHighlightList> {
                           height: 14,
                         ),
                         const SizedBox(width: 4),
-                        Text('${post['likes'] ?? 0}'),
+                        Text('$likeCount'), // ✅ 배열로부터 계산된 값
                         const SizedBox(width: 12),
                         Image.asset(
                           'assets/comment_icon.png',

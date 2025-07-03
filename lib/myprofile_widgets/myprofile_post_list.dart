@@ -37,7 +37,6 @@ class _MyProfilePostListState extends State<MyProfilePostList> {
 
       final userId = userData['user_id'];
 
-      // ✅ 댓글 count 포함한 게시글 조회
       final res = await supabase
           .from('Board')
           .select('''
@@ -67,10 +66,17 @@ class _MyProfilePostListState extends State<MyProfilePostList> {
     }
   }
 
-  // ✅ 댓글 수 파싱 함수
   int getCommentCount(dynamic post) {
     if (post['Comment'] is List && post['Comment'].isNotEmpty) {
       return post['Comment'][0]['count'] ?? 0;
+    }
+    return 0;
+  }
+
+  int getLikeCount(dynamic post) {
+    // ✅ 좋아요 수는 배열 길이로 처리
+    if (post['likes'] is List) {
+      return post['likes'].length;
     }
     return 0;
   }
@@ -95,6 +101,7 @@ class _MyProfilePostListState extends State<MyProfilePostList> {
       itemBuilder: (context, index) {
         final post = posts[index];
         final commentCount = getCommentCount(post);
+        final likeCount = getLikeCount(post); // ✅
 
         return GestureDetector(
           onTap: () {
@@ -134,7 +141,7 @@ class _MyProfilePostListState extends State<MyProfilePostList> {
                           height: 14,
                         ),
                         const SizedBox(width: 4),
-                        Text('${post['likes'] ?? 0}'),
+                        Text('$likeCount'), // ✅
                         const SizedBox(width: 12),
                         Image.asset(
                           'assets/comment_icon.png',

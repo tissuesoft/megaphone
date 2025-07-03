@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; // ✅ 이거 꼭 있어야 함
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:megaphone/screens/otherpeople_profile_screen.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
 class PostDetailContentCard extends StatefulWidget {
   final dynamic postData;
@@ -12,56 +13,100 @@ class PostDetailContentCard extends StatefulWidget {
 }
 
 class _PostDetailContentCardState extends State<PostDetailContentCard> {
-  late bool isLiked;
+  late bool isLiked = false;
   late int likeCount;
+  late List<String> likesList;
 
   @override
   void initState() {
     super.initState();
-    isLiked = false;
-    likeCount = widget.postData['likes'] ?? 0;
+    final likes = widget.postData['likes'];
+    likesList = likes is List ? List<String>.from(likes) : [];
+    likeCount = likesList.length;
+    initLikeStatus();
+  }
+
+  Future<String?> getUserNickname() async {
+    try {
+      final kakaoUser = await UserApi.instance.me();
+      final kakaoId = kakaoUser.id.toString();
+
+      final supabase = Supabase.instance.client;
+      final userData = await supabase
+          .from('Users')
+          .select('user_nickname')
+          .eq('kakao_id', kakaoId)
+          .maybeSingle();
+
+      return userData?['user_nickname'];
+    } catch (e) {
+      print('❌ user_nickname 가져오기 실패: $e');
+      return null;
+    }
+  }
+
+  Future<void> initLikeStatus() async {
+    final nickname = await getUserNickname();
+    if (nickname == null) return;
+
+    setState(() {
+      isLiked = likesList.contains(nickname);
+    });
   }
 
   void _toggleLike() async {
-    setState(() {
-      isLiked = !isLiked;
-      likeCount += isLiked ? 1 : -1;
-    });
+    final nickname = await getUserNickname();
+    if (nickname == null) return;
 
     final supabase = Supabase.instance.client;
     final boardId = widget.postData['board_id'];
 
+    final alreadyLiked = likesList.contains(nickname);
+
+    if (alreadyLiked) {
+      likesList.remove(nickname);
+    } else {
+      likesList.add(nickname);
+    }
+
     try {
       await supabase
           .from('Board')
-          .update({'likes': likeCount})
+          .update({'likes': likesList})
           .eq('board_id', boardId);
+
+      setState(() {
+        isLiked = !alreadyLiked;
+        likeCount = likesList.length;
+      });
     } catch (e) {
       print('❌ 좋아요 업데이트 실패: $e');
 
-      // 실패하면 원래 상태로 롤백
+      // 실패 시 롤백
       setState(() {
-        isLiked = !isLiked;
-        likeCount += isLiked ? 1 : -1;
+        if (alreadyLiked) {
+          likesList.add(nickname);
+        } else {
+          likesList.remove(nickname);
+        }
+        isLiked = alreadyLiked;
+        likeCount = likesList.length;
       });
     }
   }
 
-
   void _goToProfile() {
     final user = widget.postData['Users'] ?? {};
     final userId = user['user_id'];
-    print(userId);
     if (userId == null) return;
 
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => OtherProfileScreen(userId: userId.toString()), // ✅ toString() 필수
+        builder: (_) => OtherProfileScreen(userId: userId.toString()),
       ),
     );
   }
-
 
   String _getRemainingTimeText(String rawTime) {
     try {
@@ -199,8 +244,8 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           child: Row(
             children: [
-              const SizedBox(width: 12), // 여백 추가
-              Expanded( // 텍스트가 줄바꿈 되도록
+              const SizedBox(width: 12),
+              Expanded(
                 child: Text(
                   title,
                   style: const TextStyle(
@@ -211,12 +256,12 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12), // 여백 추가
+              const SizedBox(width: 12),
             ],
           ),
         ),
 
-        // 하단: 크라운 아이콘 + 마감 텍스트
+        // 하단: 좋아요 + 마감 텍스트
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: SizedBox(
@@ -225,7 +270,6 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // 가운데 크라운 + 좋아요 수
                 GestureDetector(
                   onTap: _toggleLike,
                   child: Row(
@@ -251,7 +295,6 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
                     ],
                   ),
                 ),
-                // 오른쪽 마감 텍스트
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(

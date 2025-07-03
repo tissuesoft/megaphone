@@ -1,20 +1,18 @@
+// ✂️ imports 동일
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:megaphone/screens/otherpeople_profile_screen.dart';
 import 'package:megaphone/screens/post_screen.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
 class MegaphonePostListLiked extends StatefulWidget {
   final DateTime selectedDateTime;
 
-  const MegaphonePostListLiked({
-    super.key,
-    required this.selectedDateTime,
-  });
+  const MegaphonePostListLiked({super.key, required this.selectedDateTime});
 
   @override
-  State<MegaphonePostListLiked> createState() =>
-      MegaphonePostListLikedState();
+  State<MegaphonePostListLiked> createState() => MegaphonePostListLikedState();
 }
 
 class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
@@ -29,14 +27,34 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
     fetchPosts();
   }
 
+  Future<String?> getUserNickname() async {
+    try {
+      final kakaoUser = await UserApi.instance.me();
+      final kakaoId = kakaoUser.id.toString();
+
+      final supabase = Supabase.instance.client;
+      final userData = await supabase
+          .from('Users')
+          .select('user_nickname')
+          .eq('kakao_id', kakaoId)
+          .maybeSingle();
+
+      return userData?['user_nickname'];
+    } catch (e) {
+      print('❌ user_nickname 조회 실패: $e');
+      return null;
+    }
+  }
+
   Future<void> fetchPosts() async {
     final supabase = Supabase.instance.client;
+    final nickname = await getUserNickname();
+
     try {
       final response = await supabase
           .from('Board')
           .select('''
             board_id,
-            user_id,
             title,
             created_at,
             likes,
@@ -55,8 +73,12 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
         posts = response;
         for (var item in posts) {
           final boardId = item['board_id'];
-          likeCounts[boardId] = item['likes'] ?? 0;
-          likedStates[boardId] = false;
+          final likes = item['likes'] is List
+              ? List<String>.from(item['likes'])
+              : [];
+
+          likeCounts[boardId] = likes.length;
+          likedStates[boardId] = nickname != null && likes.contains(nickname);
         }
         isLoading = false;
       });
@@ -99,8 +121,8 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
     return Column(
       children: filteredPosts.map((item) {
         final user = item['Users'] ?? {};
-        final userId = item['Users']?['user_id'];
         final nickname = user['user_nickname'] ?? '알 수 없음';
+        final userId = user['user_id'];
         final usedMegaphone =
             int.tryParse(user['used_megaphone']?.toString() ?? '0') ?? 0;
 
@@ -112,19 +134,20 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
         final timeAgo = _getTimeAgo(createdAt);
         final remaining = _getRemainingTime(postDateTime);
         final boardId = item['board_id'];
-        final commentCount =
-        item['Comment'] is List && item['Comment'].isNotEmpty
+        final commentCount = item['Comment'] is List &&
+            item['Comment'].isNotEmpty
             ? item['Comment'][0]['count'] ?? 0
             : 0;
-        int likeCount = likeCounts[boardId] ?? 0;
-        bool isLiked = likedStates[boardId] ?? false;
+
+        final likeCount = likeCounts[boardId] ?? 0;
+        final isLiked = likedStates[boardId] ?? false;
 
         return GestureDetector(
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => PostScreen(boardId: item['board_id']),
+                builder: (_) => PostScreen(boardId: boardId),
               ),
             );
           },
@@ -151,20 +174,19 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     GestureDetector(
-                      behavior: HitTestBehavior.opaque,
                       onTap: () {
-                        final userId = item['Users']?['user_id'];
                         if (userId == null || userId.toString().isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('유저 정보를 불러올 수 없습니다.')),
                           );
                           return;
                         }
-
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => OtherProfileScreen(userId: userId.toString()),
+                            builder: (_) => OtherProfileScreen(
+                              userId: userId.toString(),
+                            ),
                           ),
                         );
                       },
@@ -181,14 +203,17 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
                           if (usedMegaphone > 0) ...[
                             const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFED7AA),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Row(
                                 children: [
-                                  Image.asset('assets/megaphoneCountIcon.png', width: 12),
+                                  Image.asset(
+                                      'assets/megaphoneCountIcon.png',
+                                      width: 12),
                                   const SizedBox(width: 4),
                                   Text(
                                     '$usedMegaphone회',
@@ -206,7 +231,6 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
                         ],
                       ),
                     ),
-
                     Text(
                       postTime,
                       style: const TextStyle(
@@ -234,35 +258,52 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () async {
-                            setState(() {
-                              isLiked = !isLiked;
-                              likeCount += isLiked ? 1 : -1;
-                              likeCounts[boardId] = likeCount;
-                              likedStates[boardId] = isLiked;
-                            });
+                            final nickname = await getUserNickname();
+                            if (nickname == null) return;
 
                             final supabase = Supabase.instance.client;
+
+                            List<String> likedUserList = item['likes'] is List
+                                ? List<String>.from(item['likes'])
+                                : [];
+
+                            final alreadyLiked =
+                            likedUserList.contains(nickname);
+
+                            if (alreadyLiked) {
+                              likedUserList.remove(nickname);
+                            } else {
+                              likedUserList.add(nickname);
+                            }
+
                             try {
                               await supabase
                                   .from('Board')
-                                  .update({'likes': likeCount})
+                                  .update({'likes': likedUserList})
                                   .eq('board_id', boardId);
                             } catch (e) {
                               print('❌ 좋아요 업데이트 실패: $e');
                             }
+
+                            if (!mounted) return;
+
+                            setState(() {
+                              likedStates[boardId] = !alreadyLiked;
+                              likeCounts[boardId] = likedUserList.length;
+                              item['likes'] = likedUserList;
+                            });
                           },
                           child: Row(
                             children: [
                               Image.asset(
-                                isLiked
+                                likedStates[boardId] == true
                                     ? 'assets/crown_icon_likes+1.png'
                                     : 'assets/crown_icon_likes.png',
                                 width: 16,
-                                height: 16,
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '$likeCount',
+                                '${likeCounts[boardId] ?? 0}',
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: Color(0xFFFF6B35),

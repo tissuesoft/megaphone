@@ -6,6 +6,7 @@ import '../home_widgets/sort_tab_bar.dart';
 import '../home_widgets/megaphone_post_list_latest.dart';
 import '../home_widgets/megaphone_post_list_liked.dart';
 import '../screens/write_post_screen.dart';
+import 'package:megaphone/main.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,7 +15,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with RouteAware{
   String selectedTab = 'latest';
   DateTime? selectedDateTime;
 
@@ -37,6 +38,29 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       selectedDateTime = time;
     });
+  }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!); // ✅ 구독
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this); // ✅ 구독 해제
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    // ✅ 뒤에서 돌아왔을 때 새로고침
+    cardKey.currentState?.fetchTopPostForCurrentHour();
+    if (selectedTab == 'latest') {
+      latestKey.currentState?.fetchPosts();
+    } else {
+      likedKey.currentState?.fetchPosts();
+    }
+    setState(() {}); // 필요 시
   }
 
   void onTabSelected(String tab) {

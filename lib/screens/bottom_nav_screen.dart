@@ -20,11 +20,19 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
     // RankingScreen(),
     ProfileScreen(),
   ];
-
+  //
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _selectedIndex = widget.initialIndex;
+  // }
   @override
   void initState() {
     super.initState();
-    _selectedIndex = widget.initialIndex;
+    // index가 리스트 범위 넘어가면 0으로 보정
+    _selectedIndex = (widget.initialIndex < _screens.length)
+        ? widget.initialIndex
+        : 0;
   }
 
   void _onItemTapped(int index) {

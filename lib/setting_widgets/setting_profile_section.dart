@@ -1,9 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:megaphone/screens/account_info_screen.dart';
 
-
-class SettingProfileSection extends StatelessWidget {
+class SettingProfileSection extends StatefulWidget {
   const SettingProfileSection({super.key});
+
+  @override
+  State<SettingProfileSection> createState() => _SettingProfileSectionState();
+}
+
+class _SettingProfileSectionState extends State<SettingProfileSection> {
+  String? nickname;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchNickname();
+  }
+
+  Future<void> fetchNickname() async {
+    try {
+      final kakaoUser = await UserApi.instance.me();
+      final kakaoId = kakaoUser.id.toString();
+
+      final userData = await Supabase.instance.client
+          .from('Users')
+          .select('user_nickname')
+          .eq('kakao_id', kakaoId)
+          .maybeSingle();
+
+      if (userData != null && mounted) {
+        setState(() {
+          nickname = userData['user_nickname'];
+        });
+      }
+    } catch (e) {
+      print('❌ 닉네임 불러오기 실패: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,15 +64,15 @@ class SettingProfileSection extends StatelessWidget {
             ),
           ),
 
-          // 프로필 요약 (이미지 + 이름)
+          // 프로필 요약 (닉네임)
           Padding(
             padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
             child: Row(
               children: [
                 const SizedBox(width: 0),
-                const Text(
-                  '김고확',
-                  style: TextStyle(
+                Text(
+                  nickname ?? '불러오는 중...',
+                  style: const TextStyle(
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
@@ -54,7 +89,7 @@ class SettingProfileSection extends StatelessWidget {
           Container(
             width: double.infinity,
             height: 1,
-            color: Color(0xFFE0E0E0),
+            color: const Color(0xFFE0E0E0),
           ),
 
           // 계정 정보 항목
@@ -100,7 +135,7 @@ class SettingProfileSection extends StatelessWidget {
           Container(
             width: double.infinity,
             height: 1,
-            color: Color(0xFFE0E0E0),
+            color: const Color(0xFFE0E0E0),
           ),
         ],
       ),

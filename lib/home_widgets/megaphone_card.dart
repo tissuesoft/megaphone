@@ -49,21 +49,12 @@ class MegaphoneCardState extends State<MegaphoneCard> {
     super.dispose();
   }
 
-  Future<String?> getUserNickname() async {
+  Future<String?> getKakaoId() async {
     try {
       final kakaoUser = await UserApi.instance.me();
-      final kakaoId = kakaoUser.id.toString();
-
-      final supabase = Supabase.instance.client;
-      final userData = await supabase
-          .from('Users')
-          .select('user_nickname')
-          .eq('kakao_id', kakaoId)
-          .maybeSingle();
-
-      return userData?['user_nickname'];
+      return kakaoUser.id.toString();
     } catch (e) {
-      print('❌ user_nickname 가져오기 실패: $e');
+      print('❌ Kakao ID 가져오기 실패: $e');
       return null;
     }
   }
@@ -120,7 +111,7 @@ class MegaphoneCardState extends State<MegaphoneCard> {
               .eq('user_id', userId);
         }
 
-        final nickname = await getUserNickname();
+        final kakaoId = await getKakaoId();
         final likes = response['likes'] is List
             ? List<String>.from(response['likes'])
             : [];
@@ -128,7 +119,7 @@ class MegaphoneCardState extends State<MegaphoneCard> {
         if (!mounted) return;
         setState(() {
           megaphonePost = response;
-          isLiked = nickname != null && likes.contains(nickname);
+          isLiked = kakaoId != null && likes.contains(kakaoId);
           isLoading = false;
         });
       } else {
@@ -279,8 +270,8 @@ class MegaphoneCardState extends State<MegaphoneCard> {
               children: [
                 GestureDetector(
                   onTap: () async {
-                    final nickname = await getUserNickname();
-                    if (nickname == null) return;
+                    final kakaoId = await getKakaoId();
+                    if (kakaoId == null) return;
 
                     final supabase = Supabase.instance.client;
                     final boardId = megaphonePost['board_id'];
@@ -289,12 +280,12 @@ class MegaphoneCardState extends State<MegaphoneCard> {
                         ? List<String>.from(megaphonePost['likes'])
                         : [];
 
-                    final alreadyLiked = likes.contains(nickname);
+                    final alreadyLiked = likes.contains(kakaoId);
 
                     if (alreadyLiked) {
-                      likes.remove(nickname);
+                      likes.remove(kakaoId);
                     } else {
-                      likes.add(nickname);
+                      likes.add(kakaoId);
                     }
 
                     try {
@@ -349,7 +340,8 @@ class MegaphoneCardState extends State<MegaphoneCard> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => OtherProfileScreen(userId: userId.toString()),
+                        builder: (_) =>
+                            OtherProfileScreen(userId: userId.toString()),
                       ),
                     );
                   },
@@ -365,7 +357,8 @@ class MegaphoneCardState extends State<MegaphoneCard> {
                 const SizedBox(width: 16),
                 if (usedMegaphone > 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFED7AA),
                       borderRadius: BorderRadius.circular(4),

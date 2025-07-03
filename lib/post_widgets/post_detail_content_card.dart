@@ -26,47 +26,38 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
     initLikeStatus();
   }
 
-  Future<String?> getUserNickname() async {
+  Future<String?> getKakaoId() async {
     try {
       final kakaoUser = await UserApi.instance.me();
-      final kakaoId = kakaoUser.id.toString();
-
-      final supabase = Supabase.instance.client;
-      final userData = await supabase
-          .from('Users')
-          .select('user_nickname')
-          .eq('kakao_id', kakaoId)
-          .maybeSingle();
-
-      return userData?['user_nickname'];
+      return kakaoUser.id.toString();
     } catch (e) {
-      print('❌ user_nickname 가져오기 실패: $e');
+      print('❌ kakao_id 가져오기 실패: $e');
       return null;
     }
   }
 
   Future<void> initLikeStatus() async {
-    final nickname = await getUserNickname();
-    if (nickname == null) return;
+    final kakaoId = await getKakaoId();
+    if (kakaoId == null) return;
 
     setState(() {
-      isLiked = likesList.contains(nickname);
+      isLiked = likesList.contains(kakaoId);
     });
   }
 
   void _toggleLike() async {
-    final nickname = await getUserNickname();
-    if (nickname == null) return;
+    final kakaoId = await getKakaoId();
+    if (kakaoId == null) return;
 
     final supabase = Supabase.instance.client;
     final boardId = widget.postData['board_id'];
 
-    final alreadyLiked = likesList.contains(nickname);
+    final alreadyLiked = likesList.contains(kakaoId);
 
     if (alreadyLiked) {
-      likesList.remove(nickname);
+      likesList.remove(kakaoId);
     } else {
-      likesList.add(nickname);
+      likesList.add(kakaoId);
     }
 
     try {
@@ -85,9 +76,9 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
       // 실패 시 롤백
       setState(() {
         if (alreadyLiked) {
-          likesList.add(nickname);
+          likesList.add(kakaoId);
         } else {
-          likesList.remove(nickname);
+          likesList.remove(kakaoId);
         }
         isLiked = alreadyLiked;
         likeCount = likesList.length;

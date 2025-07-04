@@ -126,7 +126,7 @@ class _PostDetailContentCardState extends State<PostDetailContentCard> {
 
   String _getTimeAgoText(String createdAtString) {
     try {
-      final createdAt = DateTime.parse(createdAtString).toLocal();
+      final createdAt = DateTime.parse(createdAtString).toUtc().add(const Duration(hours: 9));
       final now = DateTime.now();
       final difference = now.difference(createdAt);
 

@@ -54,8 +54,7 @@ class PostCommentListState extends State<PostCommentList> {
   }
 
   String _formatTimeAgo(String createdAt) {
-    final created = DateTime.parse(createdAt).toLocal();
-    final now = DateTime.now();
+    final created = DateTime.parse(createdAt).toUtc().add(const Duration(hours: 9));    final now = DateTime.now();
     final diff = now.difference(created);
 
     if (diff.inMinutes < 1) return '방금 전';

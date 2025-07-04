@@ -57,6 +57,7 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
             )
           ''')
           .order('likes', ascending: false)
+          .order('created_at', ascending: true)
           .limit(50);
 
       setState(() {
@@ -115,8 +116,16 @@ class MegaphonePostListLikedState extends State<MegaphonePostListLiked> {
         final usedMegaphone =
             int.tryParse(user['used_megaphone']?.toString() ?? '0') ?? 0;
 
-        final createdAt =
-            DateTime.tryParse(item['created_at'] ?? '') ?? DateTime.now();
+        final createdAtRaw = item['created_at'];
+        late final DateTime createdAt;
+
+        if (createdAtRaw is String) {
+          createdAt = DateTime.parse(createdAtRaw).toUtc().add(const Duration(hours: 9));
+        } else if (createdAtRaw is DateTime) {
+          createdAt = createdAtRaw.toUtc().add(const Duration(hours: 9));
+        } else {
+          createdAt = DateTime.now();
+        }
         final postDateTime =
             DateTime.tryParse(item['megaphone_time'] ?? '') ?? DateTime.now();
         final postTime = DateFormat('HH:mm').format(postDateTime.toLocal());

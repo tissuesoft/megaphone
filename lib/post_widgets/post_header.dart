@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PostHeader extends StatefulWidget implements PreferredSizeWidget {
-  const PostHeader({super.key});
+  final dynamic postData;
+  final VoidCallback onDelete;
+
+  const PostHeader({
+    super.key,
+    required this.postData,
+    required this.onDelete,
+  });
 
   @override
   State<PostHeader> createState() => _PostHeaderState();
@@ -11,28 +20,109 @@ class PostHeader extends StatefulWidget implements PreferredSizeWidget {
 }
 
 class _PostHeaderState extends State<PostHeader> {
-  final GlobalKey _menuIconKey = GlobalKey(); // 점 3개 아이콘 위치 확인용
+  final GlobalKey _menuIconKey = GlobalKey();
   OverlayEntry? _overlayEntry;
 
-  void _showDeletePopup() {
+  String? myUserId;
+  String? writerUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    loadUserIds();
+  }
+
+  Future<void> loadUserIds() async {
+    try {
+      final kakaoUser = await UserApi.instance.me();
+      final usersMap = widget.postData['Users'];
+      print(kakaoUser);
+      print('kakaoUser');
+
+
+      if (usersMap == null) {
+        print('❌ postData["Users"] is null');
+        return;
+      }
+
+      setState(() {
+        myUserId = kakaoUser.id.toString();
+        writerUserId = usersMap['kakao_id']?.toString();
+        print('🟡 myUserId: $myUserId');
+        print('🟢 writerUserId: $writerUserId');
+      });
+    } catch (e) {
+      print('❌ 사용자 ID 불러오기 실패: $e');
+    }
+  }
+
+  Future<void> deletePost() async {
+    final boardId = widget.postData['board_id'];
+    try {
+      final kakaoIdInt = int.parse(myUserId!); // 👈 String → int
+
+      print('🧾 삭제 요청 board_id: $boardId, kakao_id: $kakaoIdInt');
+
+      final response = await Supabase.instance.client
+          .from('Board')
+          .delete()
+          .eq('board_id', boardId)
+          .eq('kakao_id', kakaoIdInt) // 👈 정확한 타입으로 비교
+          .select();
+
+      print('✅ 삭제 완료: $response');
+      widget.onDelete();
+    } catch (e) {
+      print('❌ 게시글 삭제 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('게시글 삭제에 실패했습니다.')),
+      );
+    }
+  }
+
+
+
+  void _showDeletePopup() async {
+    if (myUserId == null || writerUserId == null) {
+      print('❗ 사용자 정보 로딩 전');
+      return;
+    }
+
+    if (myUserId != writerUserId) {
+      print('❌ 작성자 아님: 삭제 불가');
+      return;
+    }
+
     final RenderBox renderBox = _menuIconKey.currentContext!.findRenderObject() as RenderBox;
     final Offset offset = renderBox.localToGlobal(Offset.zero);
 
     _overlayEntry = OverlayEntry(
       builder: (context) {
         return Positioned(
-          top: offset.dy + renderBox.size.height + 0, // 아이콘 아래에 위치
-          left: offset.dx + renderBox.size.width - 86, // 오른쪽 정렬
+          top: offset.dy + renderBox.size.height,
+          left: offset.dx + renderBox.size.width - 86,
           child: Material(
             color: Colors.transparent,
             child: GestureDetector(
-              onTap: () {
+              onTap: () async {
                 _overlayEntry?.remove();
                 _overlayEntry = null;
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('삭제 버튼 클릭됨')),
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('게시글 삭제'),
+                    content: const Text('정말 삭제하시겠습니까?'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')),
+                      TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('삭제')),
+                    ],
+                  ),
                 );
+
+                if (confirm == true) {
+                  await deletePost();
+                }
               },
               child: Container(
                 width: 90,
@@ -55,7 +145,7 @@ class _PostHeaderState extends State<PostHeader> {
                   children: const [
                     Icon(
                       Icons.delete_outline,
-                      color: Color(0xFFDC2626), // 빨간 느낌 강조
+                      color: Color(0xFFDC2626),
                       size: 16,
                     ),
                     SizedBox(width: 6),
@@ -65,7 +155,7 @@ class _PostHeaderState extends State<PostHeader> {
                         fontFamily: 'Roboto',
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFFDC2626), // 빨간 텍스트
+                        color: Color(0xFFDC2626),
                       ),
                     ),
                   ],
@@ -102,7 +192,6 @@ class _PostHeaderState extends State<PostHeader> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // ← 뒤로가기 버튼
             Positioned(
               left: 8,
               top: 12,
@@ -122,8 +211,6 @@ class _PostHeaderState extends State<PostHeader> {
                 ),
               ),
             ),
-
-            // 📝 중앙 타이틀
             const Text(
               '게시글 상세',
               style: TextStyle(
@@ -134,13 +221,11 @@ class _PostHeaderState extends State<PostHeader> {
                 color: Color(0xFF111827),
               ),
             ),
-
-            // ⋮ 옵션 버튼
             Positioned(
               right: 8,
               top: 12,
               child: GestureDetector(
-                key: _menuIconKey, // 위치 측정용
+                key: _menuIconKey,
                 onTap: _toggleDeletePopup,
                 child: const SizedBox(
                   width: 31.75,

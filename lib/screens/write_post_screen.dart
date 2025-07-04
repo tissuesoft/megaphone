@@ -94,6 +94,7 @@ class _WritePostScreenState extends State<WritePostScreen> {
       // Board 테이블에 게시글 저장
       await supabase.from('Board').insert({
         'user_id': userId,
+        'kakao_id': int.parse(kakaoId), // ✅ kakao_id 추가 (bigint 컬럼이라 int로 변환)
         'megaphone_time': formattedTime, // ✅ 원하는 형식으로 저장
         'title': content.trim(),
         'megaphone_win': false,

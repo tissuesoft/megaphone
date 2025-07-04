@@ -121,9 +121,18 @@ class MegaphonePostListLatestState extends State<MegaphonePostListLatest>
         final nickname = user['user_nickname'] ?? '알 수 없음';
         final usedMegaphone =
             int.tryParse(user['used_megaphone']?.toString() ?? '0') ?? 0;
+        // ✅ created_at → toLocal() 적용 (String 또는 DateTime 모두 처리)
+        final createdAtRaw = item['created_at'];
+        late final DateTime createdAt;
 
-        final createdAt =
-            DateTime.tryParse(item['created_at'] ?? '') ?? DateTime.now();
+        if (createdAtRaw is String) {
+          createdAt = DateTime.parse(createdAtRaw).toUtc().add(const Duration(hours: 9));
+        } else if (createdAtRaw is DateTime) {
+          createdAt = createdAtRaw.toUtc().add(const Duration(hours: 9));
+        } else {
+          createdAt = DateTime.now();
+        }
+
         final postDateTime =
             DateTime.tryParse(item['megaphone_time'] ?? '') ?? DateTime.now();
         final postTime = DateFormat('HH:mm').format(postDateTime.toLocal());

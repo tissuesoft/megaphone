@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../home_widgets/home_header.dart';
 import '../home_widgets/megaphone_card.dart';
@@ -15,9 +16,10 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with RouteAware{
+class _HomeScreenState extends State<HomeScreen> with RouteAware {
   String selectedTab = 'latest';
   DateTime? selectedDateTime;
+  Timer? _timer;
 
   final GlobalKey<MegaphonePostListLatestState> latestKey = GlobalKey();
   final GlobalKey<MegaphonePostListLikedState> likedKey = GlobalKey();
@@ -32,35 +34,56 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware{
     final now = DateTime.now().toUtc().add(const Duration(hours: 9));
     final nextHour = DateTime(now.year, now.month, now.day, now.hour + 1);
     selectedDateTime = nextHour;
+
+    // ✅ 1분마다 시간 체크 타이머 시작
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) => _checkTime());
   }
 
-  void onTimeSelected(DateTime time) {
-    setState(() {
-      selectedDateTime = time;
-    });
+  void _checkTime() {
+    final now = DateTime.now().toUtc().add(const Duration(hours: 9));
+    if (now.isAfter(selectedDateTime!)) {
+      final nextHour = DateTime(now.year, now.month, now.day, now.hour + 1);
+      setState(() {
+        selectedDateTime = nextHour;
+      });
+
+      cardKey.currentState?.fetchTopPostForCurrentHour();
+      if (selectedTab == 'latest') {
+        latestKey.currentState?.fetchPosts();
+      } else {
+        likedKey.currentState?.fetchPosts();
+      }
+    }
   }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    routeObserver.subscribe(this, ModalRoute.of(context)!); // ✅ 구독
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
   }
 
   @override
   void dispose() {
-    routeObserver.unsubscribe(this); // ✅ 구독 해제
+    _timer?.cancel(); // ✅ 타이머 정리
+    routeObserver.unsubscribe(this);
     super.dispose();
   }
 
   @override
   void didPopNext() {
-    // ✅ 뒤에서 돌아왔을 때 새로고침
     cardKey.currentState?.fetchTopPostForCurrentHour();
     if (selectedTab == 'latest') {
       latestKey.currentState?.fetchPosts();
     } else {
       likedKey.currentState?.fetchPosts();
     }
-    setState(() {}); // 필요 시
+    setState(() {});
+  }
+
+  void onTimeSelected(DateTime time) {
+    setState(() {
+      selectedDateTime = time;
+    });
   }
 
   void onTabSelected(String tab) {
@@ -71,7 +94,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware{
 
   void _handleSwipe() {
     final dx = _dragUpdate.dx - _dragStart.dx;
-
     if (dx < -50 && selectedTab == 'latest') {
       onTabSelected('liked');
     } else if (dx > 50 && selectedTab == 'liked') {
@@ -96,7 +118,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware{
             MaterialPageRoute(builder: (_) => const WritePostScreen()),
           );
 
-          // ✅ 게시글 작성 완료 후 돌아온 경우만 새로고침
           if (result == true) {
             await cardKey.currentState?.fetchTopPostForCurrentHour();
             if (selectedTab == 'latest') {
@@ -143,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware{
                 onHorizontalDragUpdate: (details) {
                   _dragUpdate = details.globalPosition;
                 },
-                onHorizontalDragEnd: (details) {
+                onHorizontalDragEnd: (_) {
                   _handleSwipe();
                 },
                 child: selectedTab == 'latest'

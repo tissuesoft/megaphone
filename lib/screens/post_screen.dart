@@ -41,7 +41,8 @@ class _PostScreenState extends State<PostScreen> {
             Users (
               user_id,
               user_nickname,
-              used_megaphone
+              used_megaphone,
+              kakao_id
             )
           ''')
           .eq('board_id', widget.boardId)
@@ -68,7 +69,25 @@ class _PostScreenState extends State<PostScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true, // 핵심! 키보드 올라올 때 자동 밀어줌
       backgroundColor: Colors.white,
-      appBar: const PostHeader(),
+      appBar: isLoading || postData == null
+          ? AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          '게시글 상세',
+          style: TextStyle(color: Colors.black),
+        ),
+        iconTheme: const IconThemeData(color: Colors.black),
+      )
+          : PostHeader(
+        postData: postData,
+        onDelete: () {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('게시글이 삭제되었습니다.')),
+          );
+        },
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : postData == null

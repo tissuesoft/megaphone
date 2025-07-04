@@ -20,12 +20,13 @@ class _IdInputSectionState extends State<IdInputSection> {
     super.dispose();
   }
 
+  // ✅ 닉네임 업데이트만 수행하는 함수
   Future<void> updateNickname(String nickname) async {
     try {
       final kakaoUser = await UserApi.instance.me();
       final kakaoId = kakaoUser.id.toString();
 
-      final response = await supabase
+      await supabase
           .from('Users')
           .update({'user_nickname': nickname})
           .eq('kakao_id', kakaoId);
@@ -39,6 +40,31 @@ class _IdInputSectionState extends State<IdInputSection> {
       print('❌ 닉네임 저장 실패: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('닉네임 저장에 실패했습니다.')),
+      );
+    }
+  }
+
+  // ✅ 닉네임 중복 체크 후 업데이트 수행
+  Future<void> checkAndUpdateNickname(String nickname) async {
+    try {
+      final existing = await supabase
+          .from('Users')
+          .select('user_nickname')
+          .eq('user_nickname', nickname)
+          .maybeSingle();
+
+      if (existing != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('이미 사용 중인 닉네임입니다.')),
+        );
+        return;
+      }
+
+      await updateNickname(nickname);
+    } catch (e) {
+      print('❌ 닉네임 중복 확인 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('닉네임 확인 중 오류가 발생했습니다.')),
       );
     }
   }
@@ -93,10 +119,12 @@ class _IdInputSectionState extends State<IdInputSection> {
                   final regex = RegExp(r'^[\w가-힣]{2,20}$');
                   if (!regex.hasMatch(text)) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('닉네임은 한글, 영문, 숫자, _(언더스코어)만 사용하며 2~20자여야 합니다.')),
+                      const SnackBar(
+                        content: Text('닉네임은 한글, 영문, 숫자, _(언더스코어)만 사용하며 2~20자여야 합니다.'),
+                      ),
                     );
                   } else {
-                    updateNickname(text);
+                    checkAndUpdateNickname(text); // ✅ 변경된 부분
                   }
                 },
                 style: TextButton.styleFrom(
